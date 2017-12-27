@@ -9,6 +9,8 @@
  * 		@arg int $minimum_count			   The minimum amount of tasks to be in the queue before processing
  * 		@arg bool $bulk_processing_support Whether or not the queue can send an array of payloads at once, or needs to
  * 										   send them one at a time for each task.
+ * 		@arg string $processor             What type of processor you would like to use to process the task queue.
+ *      								   Options are "async" or "cron".
  * }
  *
  * @return void
@@ -21,19 +23,20 @@ function wpqt_register_queue( $queue_name, $args ) {
 
 	// If there aren't any queues registered yet go ahead and create a new array to attach the first one to
 	if ( ! is_array( $wpqt_queues ) ) {
-		$wpqt_queues = array();
+		$wpqt_queues = [];
 	}
 
 	if ( empty( $args['callback'] ) ) {
-		new WP_Error( 'queue-callback-required', __( 'You must add a callback when registering a queue.', 'wp-queue-tasks' ) );
+		throw new Exception( __( 'You must add a callback when registering a queue', 'wp-queue-tasks' ) );
 	}
 
-	$default_args = array(
-		'callback' => '',
-		'update_interval' => false,
-		'minimum_count' => 0,
+	$default_args = [
+		'callback'                => '',
+		'update_interval'         => false,
+		'minimum_count'           => 0,
 		'bulk_processing_support' => true,
-	);
+		'processor'               => 'async',
+	];
 
 	$args = wp_parse_args(
 
@@ -47,6 +50,10 @@ function wpqt_register_queue( $queue_name, $args ) {
 		apply_filters( 'wpqt_queue_registration_args', $args, $queue_name ),
 		$default_args
 	);
+
+	if ( ! in_array( $args['processor'], [ 'async', 'cron' ], true ) ) {
+		throw new Exception( __( 'An unsupported processor was specified. Please select either "async" or "cron" for the processor argument of your queue registration', 'wp-queue-tasks' ) );
+	}
 
 	// Type set to an object to stay consistent with other WP globally registered objects such as post types
 	$wpqt_queues[ $queue_name ] = (object) $args;
@@ -79,14 +86,14 @@ function wpqt_create_task( $queues, $data ) {
 	 */
 	do_action( 'before_wpqt_create_task', $queues, $data );
 
-	$post_data = array(
+	$post_data = [
 		'post_type' => 'wpqt-task',
 		'post_content' => $data,
 		'post_status' => 'publish',
-		'tax_input' => array(
+		'tax_input' => [
 			'task-queue' => $queues,
-		),
-	);
+		],
+	];
 
 	$result = wp_insert_post( $post_data );
 

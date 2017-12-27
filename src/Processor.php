@@ -11,6 +11,7 @@ class Processor {
 	 */
 	public function run() {
 		add_action( 'init', array( $this, 'setup_processing' ) );
+		add_action( 'wpqt_run_processor', [ $this, 'run_processor' ], 10, 2 );
 	}
 
 	/**
@@ -25,13 +26,13 @@ class Processor {
 
 		if ( ! empty( $wpqt_queues ) && is_array( $wpqt_queues ) ) {
 			foreach ( $wpqt_queues as $queue_name => $queue_args ) {
-				add_action( 'admin_post_nopriv_wpqt_process_' . $queue_name, array( $this, 'process_queue' ) );
+				add_action( 'admin_post_nopriv_wpqt_process_' . $queue_name, [ $this, 'process_queue' ] );
 			}
 		}
 	}
 
 	/**
-	 * Loops through the queue and passes all of the tasks to the registered callback for processing.
+	 * Handles the incoming async post request, and creates the hook for running the processor
 	 *
 	 * @access public
 	 * @return void
@@ -42,9 +43,24 @@ class Processor {
 		$queue_name = empty( $_POST['queue_name'] ) ? '' : $_POST['queue_name'];
 		$term_id = empty( $_POST['term_id'] ) ? 0 : $_POST['term_id'];
 
+		do_action( 'wpqt_run_processor', $queue_name, $term_id );
+
+	}
+
+	/**
+	 * Method that actually runs the processor that iterates over the queue to process tasks.
+	 * This is used for both the async processor and the cron processor.
+	 *
+	 * @param string $queue_name The name of the queue being processed
+	 * @param int $term_id The term ID of the queue
+	 * @access public
+	 * @return bool
+	 */
+	public function run_processor( $queue_name, $term_id ) {
+
 		// If the queue name, or term ID wasn't set, bail.
 		if ( empty( $queue_name ) || 0 === absint( $term_id ) ) {
-			die();
+			return false;
 		}
 
 		global $wpqt_queues;
@@ -52,32 +68,32 @@ class Processor {
 
 		// If we can't find the corresponding queue settings, bail.
 		if ( empty( $current_queue_settings ) ) {
-			die();
+			return false;
 		}
 
-		$task_args = array(
+		$task_args = [
 			'post_type'      => 'wpqt-task',
 			'post_status'    => 'publish',
 			'posts_per_page' => 100,
 			'orderby'        => 'date',
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
-			'tax_query'      => array(
-				array(
+			'tax_query'      => [
+				[
 					'taxonomy' => 'task-queue',
 					'terms'    => $term_id,
 					'field'    => 'term_id',
-				),
-			),
-		);
+				],
+			],
+		];
 
 		$task_query = new \WP_Query( $task_args );
 
 		// Create an empty array to add tasks to if bulk processing is supported
-		$tasks = array();
+		$tasks = [];
 
 		// Create an empty array to add the ID's of tasks that have been successfully deleted
-		$tasks_to_delete = array();
+		$tasks_to_delete = [];
 
 		if ( $task_query->have_posts() ) :
 			while ( $task_query->have_posts() ) : $task_query->the_post();
@@ -117,8 +133,7 @@ class Processor {
 		// Unlock the queue so it can be processed in the future
 		Register::unlock_queue_process( $queue_name );
 
-		// We're done here
-		die();
+		return true;
 
 	}
 

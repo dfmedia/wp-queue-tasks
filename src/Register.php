@@ -12,13 +12,13 @@ class Register {
 	public function run() {
 
 		// Registers the "queue" taxonomy
-		add_action( 'init', array( $this, 'register_taxonomy' ) );
+		add_action( 'init', [ $this, 'register_taxonomy' ] );
 
 		// Registers the "task" post type
-		add_action( 'init', array( $this, 'register_post_type' ) );
+		add_action( 'init', [ $this, 'register_post_type' ] );
 
 		// Process the queue
-		add_action( 'shutdown', array( $this, 'process_queue' ), 999 );
+		add_action( 'shutdown', [ $this, 'process_queue' ], 999 );
 
 	}
 
@@ -30,7 +30,7 @@ class Register {
 	 */
 	public function register_taxonomy() {
 
-		$labels = array(
+		$labels = [
 			'name'                       => __( 'Task queues', 'wp-queue-tasks' ),
 			'singular_name'              => _x( 'Task queue', 'taxonomy general name', 'wp-queue-tasks' ),
 			'search_items'               => __( 'Search task queues', 'wp-queue-tasks' ),
@@ -47,9 +47,9 @@ class Register {
 			'choose_from_most_used'      => __( 'Choose from the most used task queues', 'wp-queue-tasks' ),
 			'not_found'                  => __( 'No task queues found.', 'wp-queue-tasks' ),
 			'menu_name'                  => __( 'Task queues', 'wp-queue-tasks' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'hierarchical'          => false,
 			'public'                => true,
 			'show_in_nav_menus'     => true,
@@ -61,7 +61,7 @@ class Register {
 			'show_in_rest'          => true,
 			'rest_base'             => 'task-queue',
 			'rest_controller_class' => 'WP_REST_Terms_Controller',
-		);
+		];
 
 		register_taxonomy( 'task-queue', 'wpqt-task', $args );
 
@@ -75,7 +75,7 @@ class Register {
 	 */
 	public function register_post_type() {
 
-		$labels = array(
+		$labels = [
 			'name'               => __( 'Queue Tasks', 'wp-queue-tasks' ),
 			'singular_name'      => __( 'Queue Task', 'wp-queue-tasks' ),
 			'all_items'          => __( 'All Queue Tasks', 'wp-queue-tasks' ),
@@ -89,9 +89,9 @@ class Register {
 			'not_found_in_trash' => __( 'No Queue Tasks found in trash', 'wp-queue-tasks' ),
 			'parent_item_colon'  => __( 'Parent Queue Task', 'wp-queue-tasks' ),
 			'menu_name'          => __( 'Queue Tasks', 'wp-queue-tasks' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'labels'                => $labels,
 			'public'                => true,
 			'hierarchical'          => false,
@@ -100,14 +100,14 @@ class Register {
 			'exclude_from_search'   => true,
 			'publicly_queryable'    => false,
 			'show_in_menu'			=> true,
-			'supports'              => array( 'title', 'editor' ),
+			'supports'              => [ 'title', 'editor' ],
 			'has_archive'           => false,
 			'rewrite'               => false,
 			'query_var'             => true,
 			'show_in_rest'          => true,
 			'rest_base'             => 'wpqt-task',
 			'rest_controller_class' => 'WP_REST_Posts_Controller',
-		);
+		];
 
 		register_post_type( 'wpqt-task', $args );
 
@@ -123,7 +123,8 @@ class Register {
 	 */
 	public function process_queue() {
 
-		$queues = get_terms( array( 'taxonomy' => 'task-queue' ) );
+		$queues = get_terms( [ 'taxonomy' => 'task-queue' ] );
+		global $wpqt_queues;
 
 		if ( ! empty( $queues ) && is_array( $queues ) ) {
 			foreach ( $queues as $queue ) {
@@ -142,8 +143,12 @@ class Register {
 				// The queue will be unlocked in Processor::process_queue
 				self::lock_queue_process( $queue->name );
 
-				// Post to the async task handler to process this specific queue
-				$this->post_to_processor( $queue->name, $queue->term_id );
+				if ( ! empty( $wpqt_queues[ $queue->name ] ) && 'async' === $wpqt_queues[ $queue->name ] ) {
+					// Post to the async task handler to process this specific queue
+					$this->post_to_processor( $queue->name, $queue->term_id );
+				} else {
+					$this->schedule_cron( $queue->name, $queue->term_id );
+				}
 
 			}
 		}
@@ -200,19 +205,23 @@ class Register {
 	 */
 	private function post_to_processor( $queue_name, $queue_id ) {
 
-		$request_args = array(
+		$request_args = [
 			'timeout' => 0.01,
 			'blocking' => false,
-			'body' => array(
+			'body' => [
 				'action' => 'wpqt_process_' . $queue_name,
 				'queue_name' => $queue_name,
 				'term_id' => $queue_id,
-			),
-		);
+			],
+		];
 
 		$url = admin_url( 'admin-post.php' );
 		wp_safe_remote_post( $url, $request_args );
 
+	}
+
+	private function schedule_cron( $queue_name, $queue_id ) {
+		wp_schedule_single_event( time(), 'wpqt_run_processor', [ 'queue_name' => $queue_name, 'term_id' => $queue_id ] );
 	}
 
 	/**
