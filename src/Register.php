@@ -61,6 +61,9 @@ class Register {
 			'show_in_rest'          => true,
 			'rest_base'             => 'task-queue',
 			'rest_controller_class' => 'WP_REST_Terms_Controller',
+			'show_in_graphql'       => true,
+			'graphql_single_name'   => 'queue',
+			'graphql_plural_name'   => 'queues',
 		];
 
 		register_taxonomy( 'task-queue', 'wpqt-task', $args );
@@ -107,6 +110,9 @@ class Register {
 			'show_in_rest'          => true,
 			'rest_base'             => 'wpqt-task',
 			'rest_controller_class' => 'WP_REST_Posts_Controller',
+			'show_in_graphql'       => true,
+			'graphql_single_name'   => 'task',
+			'graphql_plural_name'   => 'tasks',
 		];
 
 		register_post_type( 'wpqt-task', $args );
