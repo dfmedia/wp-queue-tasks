@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file
  *
- * @package Dfm_Queue_Tasks
+ * @package WP_Queue_Tasks
  */
 
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
@@ -17,7 +17,7 @@ require_once $_tests_dir . '/includes/functions.php';
  * Manually load the plugin being tested.
  */
 function _manually_load_plugin() {
-	require dirname( dirname( __FILE__ ) ) . '/dfm-queue-tasks.php';
+	require dirname( dirname( __FILE__ ) ) . '/wp-queue-tasks.php';
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 

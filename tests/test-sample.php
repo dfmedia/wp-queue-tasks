@@ -2,7 +2,7 @@
 /**
  * Class SampleTest
  *
- * @package Dfm_Queue_Tasks
+ * @package WP_Queue_Tasks
  */
 
 /**
