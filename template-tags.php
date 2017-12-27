@@ -13,18 +13,19 @@
  *
  * @return void
  * @access public
+ * @throws Exception
  */
-function dfm_register_queue( $queue_name, $args ) {
+function wpqt_register_queue( $queue_name, $args ) {
 
-	global $dfm_queues;
+	global $wpqt_queues;
 
 	// If there aren't any queues registered yet go ahead and create a new array to attach the first one to
-	if ( ! is_array( $dfm_queues ) ) {
-		$dfm_queues = array();
+	if ( ! is_array( $wpqt_queues ) ) {
+		$wpqt_queues = array();
 	}
 
 	if ( empty( $args['callback'] ) ) {
-		new WP_Error( 'queue-callback-required', __( 'You must add a callback when registering a queue.', 'dfm-es-sync' ) );
+		new WP_Error( 'queue-callback-required', __( 'You must add a callback when registering a queue.', 'wp-queue-tasks' ) );
 	}
 
 	$default_args = array(
@@ -43,12 +44,12 @@ function dfm_register_queue( $queue_name, $args ) {
 		 * @param string $queue_name Name of the queue we are registering
 		 * @return array $args The args array should be returned
 		 */
-		apply_filters( 'dfm_queue_registration_args', $args, $queue_name ),
+		apply_filters( 'wpqt_queue_registration_args', $args, $queue_name ),
 		$default_args
 	);
 
 	// Type set to an object to stay consistent with other WP globally registered objects such as post types
-	$dfm_queues[ $queue_name ] = (object) $args;
+	$wpqt_queues[ $queue_name ] = (object) $args;
 
 }
 
@@ -61,14 +62,14 @@ function dfm_register_queue( $queue_name, $args ) {
  * @return int|WP_Error
  * @access public
  */
-function dfm_create_task( $queues, $data ) {
+function wpqt_create_task( $queues, $data ) {
 
 	/**
 	 * Filter to add or remove queues to add to a task.
 	 *
 	 * @param string|array $queues The queues the task is going to be added to
 	 */
-	$queues = apply_filters( 'dfm_task_create_queues', $queues );
+	$queues = apply_filters( 'wpqt_task_create_queues', $queues );
 
 	/**
 	 * Hook that fires before a new task is created
@@ -76,10 +77,10 @@ function dfm_create_task( $queues, $data ) {
 	 * @param string|array $queues The queues the task is going to be added to
 	 * @param string $data The data to be stored in the_content of the task, and processed by the queue's callback
 	 */
-	do_action( 'before_dfm_create_task', $queues, $data );
+	do_action( 'before_wpqt_create_task', $queues, $data );
 
 	$post_data = array(
-		'post_type' => 'dfm-task',
+		'post_type' => 'wpqt-task',
 		'post_content' => $data,
 		'post_status' => 'publish',
 		'tax_input' => array(
@@ -98,7 +99,7 @@ function dfm_create_task( $queues, $data ) {
 		 * @param string $data The data to be stored in the_content of the task, and processed by the queue's callback
 		 * @param WP_Error $result The error object if the post failed to be created
 		 */
-		do_action( 'dfm_create_task_failed', $queues, $data, $result );
+		do_action( 'wpqt_create_task_failed', $queues, $data, $result );
 	} else {
 
 		/**
@@ -108,7 +109,7 @@ function dfm_create_task( $queues, $data ) {
 		 * @param string $data The data to be stored in the_content of the task, and processed by the queue's callback
 		 * @param int $result The ID of the task post
 		 */
-		do_action( 'after_dfm_create_task', $queues, $data, $result );
+		do_action( 'after_wpqt_create_task', $queues, $data, $result );
 	}
 
 	return $result;

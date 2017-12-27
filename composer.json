@@ -1,0 +1,22 @@
+{
+  "name": "wp-queue-tasks/wp-queue-tasks",
+  "description": "Task queue for WordPress",
+  "type": "wordpress-plugin",
+  "version": "0.2.0",
+  "authors": [
+    {
+      "name": "Ryan Kanner"
+    }
+  ],
+  "config": {
+    "optimize-autoloader": true
+  },
+  "autoload": {
+    "psr-4": {
+      "WPQueueTasks\\": "src/"
+    },
+    "classmap": [
+      "src/"
+    ]
+  }
+}
