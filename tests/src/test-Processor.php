@@ -77,6 +77,9 @@ class TestProcessor extends WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Baseline test to make sure processing works
+	 */
 	public function testSuccessfulTaskProcessing() {
 
 		$queue = 'testSuccessfulTaskProcessing';
