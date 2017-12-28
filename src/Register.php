@@ -58,6 +58,12 @@ class Register {
 			'query_var'             => true,
 			'rewrite'               => false,
 			'labels'                => $labels,
+			'capabilities'          => [
+				'manage_terms' => 'read',
+				'edit_terms'   => 'read',
+				'delete_terms' => 'read',
+				'assign_terms' => 'read',
+			],
 			'show_in_rest'          => true,
 			'rest_base'             => 'task-queue',
 			'rest_controller_class' => 'WP_REST_Terms_Controller',
@@ -102,11 +108,15 @@ class Register {
 			'show_in_nav_menus'     => false,
 			'exclude_from_search'   => true,
 			'publicly_queryable'    => false,
-			'show_in_menu'			=> true,
+			'show_in_menu'          => true,
 			'supports'              => [ 'title', 'editor' ],
 			'has_archive'           => false,
 			'rewrite'               => false,
 			'query_var'             => true,
+			'capabilities'          => [
+				'edit_posts'    => 'read',
+				'publish_posts' => 'read',
+			],
 			'show_in_rest'          => true,
 			'rest_base'             => 'wpqt-task',
 			'rest_controller_class' => 'WP_REST_Posts_Controller',
@@ -135,6 +145,11 @@ class Register {
 		if ( ! empty( $queues ) && is_array( $queues ) ) {
 			foreach ( $queues as $queue ) {
 
+				// If the term has no associated queue, bail.
+				if ( empty( $wpqt_queues[ $queue->name ] ) ) {
+					continue;
+				}
+
 				// If the queue is already being processed, bail.
 				if ( false !== self::is_queue_process_locked( $queue->name ) ) {
 					continue;
@@ -149,7 +164,7 @@ class Register {
 				// The queue will be unlocked in Processor::process_queue
 				self::lock_queue_process( $queue->name );
 
-				if ( ! empty( $wpqt_queues[ $queue->name ] ) && 'async' === $wpqt_queues[ $queue->name ] ) {
+				if ( ! empty( $wpqt_queues[ $queue->name ] ) && 'async' === $wpqt_queues[ $queue->name ]->processor ) {
 					// Post to the async task handler to process this specific queue
 					$this->post_to_processor( $queue->name, $queue->term_id );
 				} else {
@@ -176,11 +191,6 @@ class Register {
 		global $wpqt_queues;
 
 		$current_queue_settings = $wpqt_queues[ $queue_name ];
-
-		// If we couldn't get the settings for the current queue, bail.
-		if ( empty( $current_queue_settings ) ) {
-			return false;
-		}
 
 		// If there aren't enough items in this queue, bail.
 		if ( $current_queue_settings->minimum_count > $queue_count ) {

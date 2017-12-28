@@ -26,7 +26,9 @@ class Processor {
 
 		if ( ! empty( $wpqt_queues ) && is_array( $wpqt_queues ) ) {
 			foreach ( $wpqt_queues as $queue_name => $queue_args ) {
-				add_action( 'admin_post_nopriv_wpqt_process_' . $queue_name, [ $this, 'process_queue' ] );
+				if ( 'async' === $queue_args->processor ) {
+					add_action( 'admin_post_nopriv_wpqt_process_' . $queue_name, [ $this, 'process_queue' ] );
+				}
 			}
 		}
 	}
@@ -112,6 +114,17 @@ class Processor {
 					// If the callback didn't fail add the task ID to the removal array
 					if ( false !== $result && ! is_wp_error( $result ) ) {
 						$tasks_to_delete[] = $post->ID;
+					} else {
+
+						/**
+						 * Hook that fires if a single task fails to be processed
+						 *
+						 * @param array           $tasks_to_delete ID's of tasks that can be removed from the queue at this point
+						 * @param Object|\WP_Post $post            The WP_Post object of the failed task
+						 * @param false|\WP_Error $result          The value returned by the callback
+						 * @param string          $queue_name      The name of the queue that this failure happened in
+						 */
+						do_action( 'wpqt_single_task_failed', $tasks_to_delete, $post, $result, $queue_name );
 					}
 				}
 
@@ -122,6 +135,23 @@ class Processor {
 		// If the queue supports bulk processing, send all of the payloads to the callback.
 		if ( true === $current_queue_settings->bulk_processing_support ) {
 			$tasks_to_delete = call_user_func( $current_queue_settings->callback, $tasks );
+
+			/**
+			 * If the callback returns fewer tasks than we passed to it, some of them didn't get
+			 * processed, so fire a hook for debugging purposes.
+			 */
+			if ( count( $tasks_to_delete ) < count( $tasks ) ) {
+
+				/**
+				 * Hook that fires when one or more bulk processing tasks fail to process
+				 *
+				 * @param array  $tasks_to_delete The array of task ID's returned from the callback to delete
+				 * @param array  $tasks           The array of tasks that was passed to the callback for deletion
+				 * @param string $queue_name      The name of the queue that this failure happened in
+				 */
+				do_action( 'wpqt_bulk_processing_failed', $tasks_to_delete, $tasks, $queue_name );
+			}
+
 		}
 
 		// Remove all of the tasks from the queue
