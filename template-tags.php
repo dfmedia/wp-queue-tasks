@@ -75,8 +75,9 @@ function wpqt_create_task( $queues, $data ) {
 	 * Filter to add or remove queues to add to a task.
 	 *
 	 * @param string|array $queues The queues the task is going to be added to
+	 * @param string $data The data to be saved in the task
 	 */
-	$queues = apply_filters( 'wpqt_task_create_queues', $queues );
+	$queues = apply_filters( 'wpqt_task_create_queues', $queues, $data );
 
 	/**
 	 * Hook that fires before a new task is created
@@ -90,9 +91,6 @@ function wpqt_create_task( $queues, $data ) {
 		'post_type' => 'wpqt-task',
 		'post_content' => $data,
 		'post_status' => 'publish',
-		'tax_input' => [
-			'task-queue' => $queues,
-		],
 	];
 
 	$result = wp_insert_post( $post_data );
@@ -108,6 +106,11 @@ function wpqt_create_task( $queues, $data ) {
 		 */
 		do_action( 'wpqt_create_task_failed', $queues, $data, $result );
 	} else {
+
+		/**
+		 * Set the object terms
+		 */
+		wp_set_object_terms( $result, $queues, 'task-queue' );
 
 		/**
 		 * Hook that fires after a task has been created
