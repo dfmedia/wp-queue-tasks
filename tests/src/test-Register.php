@@ -34,4 +34,21 @@ class TestRegister extends WP_UnitTestCase {
 		$this->assertNotEquals( false, $actual );
 	}
 
+	/**
+	 * Test that a low level user can still trigger the creation of tasks and queues
+	 */
+	public function testLowLevelUserCanCreateTasks() {
+
+		$user_id = $this->factory->user->create( [ 'role' => 'subscriber' ] );
+		wp_set_current_user( $user_id );
+
+		$result = wpqt_create_task( 'randomqueue', 'test' );
+		$this->assertNotNull( get_post( $result ) );
+
+		$queues = get_the_terms( $result, 'task-queue' );
+
+		$this->assertTrue( is_array( $queues ) );
+
+	}
+
 }
