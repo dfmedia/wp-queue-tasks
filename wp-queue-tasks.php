@@ -53,7 +53,7 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 			 *
 			 * @param object $instance Instance of the current WPQueueTasks class
 			 */
-			do_action( 'wpqp_init', self::$instance );
+			do_action( 'wpqt_init', self::$instance );
 
 			return self::$instance;
 
