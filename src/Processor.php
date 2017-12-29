@@ -1,6 +1,7 @@
 <?php
 
 namespace WPQueueTasks;
+
 /**
  * Class Processor: Accepts requests to kick off the processing of a queue
  */
@@ -9,8 +10,8 @@ class Processor {
 	/**
 	 * Sets up all of the actions we need for the class
 	 */
-	public function run() {
-		add_action( 'init', array( $this, 'setup_processing' ) );
+	public function setup() {
+		add_action( 'init', [ $this, 'setup_processing' ] );
 		add_action( 'wpqt_run_processor', [ $this, 'run_processor' ], 10, 2 );
 	}
 
@@ -54,7 +55,8 @@ class Processor {
 	 * This is used for both the async processor and the cron processor.
 	 *
 	 * @param string $queue_name The name of the queue being processed
-	 * @param int $term_id The term ID of the queue
+	 * @param int    $term_id    The term ID of the queue
+	 *
 	 * @access public
 	 * @return bool
 	 */
@@ -161,17 +163,18 @@ class Processor {
 		update_term_meta( $term_id, 'wpqt_queue_last_run', time() );
 
 		// Unlock the queue so it can be processed in the future
-		Register::unlock_queue_process( $queue_name );
+		Utils::unlock_queue_process( $queue_name );
 
 		return true;
 
 	}
 
 	/**
-	 * Removes tasks from the queue by either deleting them entirely, or removing the queue's term from the task
+	 * Removes tasks from the queue by either deleting them entirely, or removing the queue's term
+	 * from the task
 	 *
-	 * @param array $tasks Array of ID's for the tasks we should remove from the queue
-	 * @param int $queue_id Term ID of the queue we want to remove the task from
+	 * @param array $tasks    Array of ID's for the tasks we should remove from the queue
+	 * @param int   $queue_id Term ID of the queue we want to remove the task from
 	 *
 	 * @access private
 	 * @return void
