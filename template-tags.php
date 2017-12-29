@@ -1,6 +1,8 @@
 <?php
 
 /**
+ * Function to use for registering a new queue
+ *
  * @param string $queue_name Name of the queue you want to register. Should be slug friendly (lower cases, no spaces)
  * @param array $args {
  * 		@arg callable $callback			   The callback function to handle the payload from the task

@@ -53,7 +53,7 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 			 *
 			 * @param object $instance Instance of the current WPQueueTasks class
 			 */
-			do_action( 'wpqp_init', self::$instance );
+			do_action( 'wpqt_init', self::$instance );
 
 			return self::$instance;
 
@@ -94,11 +94,14 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 		 *
 		 * @access private
 		 * @return void
+		 * @throws Exception
 		 */
 		private function includes() {
 
 			if ( file_exists( WPQT_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
 				require_once( WPQT_PLUGIN_DIR . 'vendor/autoload.php' );
+			} else {
+				throw new Exception( __( 'Could not find autoloader file to include all files' ) );
 			}
 
 			/**
@@ -117,10 +120,13 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 		private function run() {
 
 			$register = new \WPQueueTasks\Register();
-			$register->run();
+			$register->setup();
 
 			$processor = new \WPQueueTasks\Processor();
-			$processor->run();
+			$processor->setup();
+
+			$scheduler = new \WPQueueTasks\Scheduler();
+			$scheduler->setup();
 
 		}
 

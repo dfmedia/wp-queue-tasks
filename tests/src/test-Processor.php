@@ -1,11 +1,23 @@
 <?php
 
 use \WPQueueTasks\Processor;
-use \WPQueueTasks\Register;
+use \WPQueueTasks\Utils;
 
 class TestProcessor extends WP_UnitTestCase {
 
 	private $taxonomy = 'task-queue';
+
+	/**
+	 * Test to make sure the processor is setup and callbacks are hooked correctly
+	 */
+	public function testProcessorSetup() {
+
+		$processor_obj = new Processor();
+		$processor_obj->setup();
+		$this->assertEquals( 10, has_action( 'init', [ $processor_obj, 'setup_processing' ] ) );
+		$this->assertEquals( 10, has_action( 'wpqt_run_processor', [ $processor_obj, 'run_processor' ] ) );
+
+	}
 
 	/**
 	 * Test that the hook fires correctly for the async handler
@@ -96,13 +108,13 @@ class TestProcessor extends WP_UnitTestCase {
 		$post_id = wpqt_create_task( $queue, $expected );
 		$term_obj = get_term_by( 'name', $queue, $this->taxonomy );
 
-		Register::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue );
 		$processor_obj = new Processor();
 		$result = $processor_obj->run_processor( $queue, $term_obj->term_id );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( $expected, get_option( '_test_' . $queue ) );
-		$this->assertFalse( Register::is_queue_process_locked( $queue ) );
+		$this->assertFalse( Utils::is_queue_process_locked( $queue ) );
 		$this->assertNull( get_post( $post_id ) );
 
 	}
@@ -127,7 +139,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$expected_value = 'my data';
 		$task_id = wpqt_create_task( [ $queue_1, $queue_2 ], $expected_value );
 
-		Register::lock_queue_process( $queue_1 );
+		Utils::lock_queue_process( $queue_1 );
 		$processor_obj = new Processor();
 		$queue_1_id = get_term_by( 'name', $queue_1, $this->taxonomy );
 		$result = $processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
@@ -135,16 +147,16 @@ class TestProcessor extends WP_UnitTestCase {
 		$this->assertTrue( $result );
 		$this->assertEquals( [ $expected_value ], get_option( '_test_queue_processor_callback' ) );
 		$this->assertNotNull( get_post( $task_id ) );
-		$this->assertFalse( Register::is_queue_process_locked( $queue_1 ) );
+		$this->assertFalse( Utils::is_queue_process_locked( $queue_1 ) );
 
-		Register::lock_queue_process( $queue_2 );
+		Utils::lock_queue_process( $queue_2 );
 		$queue_2_id = get_term_by( 'name', $queue_2, $this->taxonomy );
 		$result = $processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( [ $expected_value, $expected_value ], get_option( '_test_queue_processor_callback' ) );
 		$this->assertNull( get_post( $task_id ) );
-		$this->assertFalse( Register::is_queue_process_locked( $queue_2 ) );
+		$this->assertFalse( Utils::is_queue_process_locked( $queue_2 ) );
 		delete_option( '_test_queue_processor_callback' );
 
 	}
@@ -159,7 +171,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$task_id_1 = wpqt_create_task( $queue, 'some data' );
 		$task_id_2 = wpqt_create_task( $queue, 'some other data' );
 
-		Register::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue );
 		$processor_obj = new Processor();
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
@@ -173,7 +185,7 @@ class TestProcessor extends WP_UnitTestCase {
 		], get_option( '_test_queue_processor_callback') );
 		$this->assertNull( get_post( $task_id_1 ) );
 		$this->assertNull( get_post( $task_id_2 ) );
-		$this->assertFalse( Register::is_queue_process_locked( $queue ) );
+		$this->assertFalse( Utils::is_queue_process_locked( $queue ) );
 		delete_option( '_test_queue_processor_callback' );
 
 	}
@@ -197,7 +209,7 @@ class TestProcessor extends WP_UnitTestCase {
 			];
 		}, 10, 3 );
 
-		Register::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue );
 		$processor_obj = new Processor();
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
@@ -216,7 +228,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$this->assertEquals( $expected, $actual );
 		$this->assertNull( get_post( $task_1_id ) );
 		$this->assertNotNull( get_post( $task_2_id ) );
-		$this->assertFalse( Register::is_queue_process_locked( $queue ) );
+		$this->assertFalse( Utils::is_queue_process_locked( $queue ) );
 
 	}
 
@@ -244,7 +256,7 @@ class TestProcessor extends WP_UnitTestCase {
 			];
 		}, 10, 4 );
 
-		Register::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue );
 		$processor_obj = new Processor();
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
@@ -261,7 +273,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$this->assertTrue( $result );
 		$this->assertEquals( $expected, $actual );
 		$this->assertNotNull( get_post( $task_id ) );
-		$this->assertFalse( Register::is_queue_process_locked( $queue ) );
+		$this->assertFalse( Utils::is_queue_process_locked( $queue ) );
 
 	}
 
