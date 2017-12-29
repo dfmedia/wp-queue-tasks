@@ -23,6 +23,8 @@ class ComposerStaticInit44247df0bc4adc251c446ae1642f8928
     public static $classMap = array (
         'WPQueueTasks\\Processor' => __DIR__ . '/../..' . '/src/Processor.php',
         'WPQueueTasks\\Register' => __DIR__ . '/../..' . '/src/Register.php',
+        'WPQueueTasks\\Scheduler' => __DIR__ . '/../..' . '/src/Scheduler.php',
+        'WPQueueTasks\\Utils' => __DIR__ . '/../..' . '/src/Utils.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
