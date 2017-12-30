@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Ryan
- * Date: 12/29/17
- * Time: 3:17 PM
- */
 
 namespace WPQueueTasks;
 
