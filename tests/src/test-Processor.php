@@ -277,6 +277,68 @@ class TestProcessor extends WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Test that a queue limited by time interval is able to re-run if more tasks need processing
+	 */
+	public function testProcessorReRunsTooManyTasks() {
+
+		$queue = 'testProcessorReRuns';
+		wpqt_register_queue( 'testProcessorReRuns', [ 'callback' => '__return_true', 'update_interval' => HOUR_IN_SECONDS ] );
+		add_filter( 'wpqt_max_tasks_to_process', function( $max ) {
+			return 2;
+		} );
+
+		wpqt_create_task( $queue, 'task 1' );
+		wpqt_create_task( $queue, 'task 2' );
+		wpqt_create_task( $queue, 'task 3' );
+		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
+
+		$processor_obj = new Processor();
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+
+		$this->assertTrue( $result );
+		$this->assertEmpty( get_term_meta( $queue_id->term_id, 'wpqt_queue_last_run' ) );
+
+		$method = new ReflectionMethod( '\WPQueueTasks\Scheduler', 'should_process' );
+		$method->setAccessible( true );
+
+		$scheduler_obj = new \WPQueueTasks\Scheduler();
+		$this->assertTrue( $method->invoke( $scheduler_obj, $queue, $queue_id->term_id, 2 ) );
+
+		add_filter( 'wpqt_max_tasks_to_process', function( $max ) {
+			return 100;
+		}, 100 );
+
+	}
+
+	/**
+	 * Test to make sure the scheduler will schedule another process if there are some failures in a
+	 * queue that can only run at a timed interval
+	 */
+	public function testProcessorReRunsFailures() {
+
+		$queue = 'testProcessorReRunsFailures';
+		wpqt_register_queue( 'testProcessorReRunsFailures', [ 'callback' => '__return_false', 'update_interval' => HOUR_IN_SECONDS ] );
+
+		wpqt_create_task( $queue, 'task 1' );
+		wpqt_create_task( $queue, 'task 2' );
+		wpqt_create_task( $queue, 'task 3' );
+		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
+
+		$processor_obj = new Processor();
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+
+		$this->assertTrue( $result );
+		$this->assertEmpty( get_term_meta( $queue_id->term_id, 'wpqt_queue_last_run' ) );
+
+		$method = new ReflectionMethod( '\WPQueueTasks\Scheduler', 'should_process' );
+		$method->setAccessible( true );
+
+		$scheduler_obj = new \WPQueueTasks\Scheduler();
+		$this->assertTrue( $method->invoke( $scheduler_obj, $queue, $queue_id->term_id, 2 ) );
+
+	}
+
 	public function queue_processor_callback( $data ) {
 
 		$existing_data = get_option( '_test_queue_processor_callback', [] );
