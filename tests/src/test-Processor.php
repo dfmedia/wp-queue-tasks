@@ -116,6 +116,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$this->assertEquals( $expected, get_option( '_test_' . $queue ) );
 		$this->assertFalse( Utils::is_queue_process_locked( $queue ) );
 		$this->assertNull( get_post( $post_id ) );
+		$this->assertNotEmpty( get_term_meta( $term_obj->term_id, 'wpqt_queue_last_run', true ) );
 
 	}
 
