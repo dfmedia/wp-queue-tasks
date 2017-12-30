@@ -75,10 +75,20 @@ class Processor {
 			return false;
 		}
 
+		/**
+		 * The maximum amount of tasks a single processor should process
+		 *
+		 * @param string $queue_name The name of the queue the processor is iterating over
+		 * @param int $term_id The term ID of the queue
+		 *
+		 * @return int
+		 */
+		$max_tasks = apply_filters( 'wpqt_max_tasks_to_process', 100, $queue_name, $term_id );
+
 		$task_args = [
 			'post_type'      => 'wpqt-task',
 			'post_status'    => 'publish',
-			'posts_per_page' => 100,
+			'posts_per_page' => $max_tasks,
 			'orderby'        => 'date',
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
@@ -159,8 +169,13 @@ class Processor {
 		// Remove all of the tasks from the queue
 		$this->remove_tasks_from_queue( $tasks_to_delete, $term_id );
 
-		// Add some metadata about the last run time
-		update_term_meta( $term_id, 'wpqt_queue_last_run', time() );
+		if ( $max_tasks === $task_query->post_count || $tasks_to_delete < $task_query->post_count && false !== $current_queue_settings->update_interval ) {
+			// Delete the last_run meta if this queue needs to be processed again
+			delete_term_meta( $term_id, 'wpqt_queue_last_run' );
+		} else {
+			// Add some metadata about the last run time
+			update_term_meta( $term_id, 'wpqt_queue_last_run', time() );
+		}
 
 		// Unlock the queue so it can be processed in the future
 		Utils::unlock_queue_process( $queue_name );
