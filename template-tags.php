@@ -38,6 +38,7 @@ function wpqt_register_queue( $queue_name, $args ) {
 		'minimum_count'           => 0,
 		'bulk_processing_support' => true,
 		'processor'               => 'async',
+		'retry'                   => 3,
 	];
 
 	$args = wp_parse_args(

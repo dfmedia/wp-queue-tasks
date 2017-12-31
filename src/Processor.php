@@ -8,6 +8,30 @@ namespace WPQueueTasks;
 class Processor {
 
 	/**
+	 * Stores the name of the queue being processed
+	 *
+	 * @var string $queue_name
+	 * @access private
+	 */
+	private $queue_name = '';
+
+	/**
+	 * Stores the term ID of the queue being processed
+	 *
+	 * @var int $queue_id
+	 * @access private
+	 */
+	private $queue_id = 0;
+
+	/**
+	 * Stores the slug of the queue to add failed tasks to
+	 *
+	 * @var string
+	 * @access private
+	 */
+	private $failed_queue = 'failed';
+
+	/**
 	 * Sets up all of the actions we need for the class
 	 */
 	public function setup() {
@@ -67,6 +91,10 @@ class Processor {
 			return false;
 		}
 
+		// Set vars to class property so we don't have to pass them down to other methods
+		$this->queue_name = $queue_name;
+		$this->queue_id = $term_id;
+
 		global $wpqt_queues;
 		$current_queue_settings = ! empty( $wpqt_queues[ $queue_name ] ) ? $wpqt_queues[ $queue_name ] : false;
 
@@ -106,8 +134,11 @@ class Processor {
 		// Create an empty array to add tasks to if bulk processing is supported
 		$tasks = [];
 
-		// Create an empty array to add the ID's of tasks that have been successfully deleted
-		$tasks_to_delete = [];
+		// Create an empty array to add the ID's of tasks that have been successfully processed
+		$successful_tasks = [];
+
+		// Empty array to store failed tasks in
+		$failed_tasks = [];
 
 		if ( $task_query->have_posts() ) :
 			while ( $task_query->have_posts() ) : $task_query->the_post();
@@ -125,18 +156,21 @@ class Processor {
 
 					// If the callback didn't fail add the task ID to the removal array
 					if ( false !== $result && ! is_wp_error( $result ) ) {
-						$tasks_to_delete[] = $post->ID;
+						$successful_tasks[] = $post->ID;
 					} else {
+
+						$failed_tasks[] = $post->ID;
 
 						/**
 						 * Hook that fires if a single task fails to be processed
 						 *
-						 * @param array           $tasks_to_delete ID's of tasks that can be removed from the queue at this point
+						 * @param array           $failed_tasks    ID's of tasks that have failed
+						 * @param array           $successful_tasks ID's of tasks that can be removed from the queue at this point
 						 * @param Object|\WP_Post $post            The WP_Post object of the failed task
 						 * @param false|\WP_Error $result          The value returned by the callback
 						 * @param string          $queue_name      The name of the queue that this failure happened in
 						 */
-						do_action( 'wpqt_single_task_failed', $tasks_to_delete, $post, $result, $queue_name );
+						do_action( 'wpqt_single_task_failed', $failed_tasks, $successful_tasks, $post, $result, $queue_name );
 					}
 				}
 
@@ -146,30 +180,34 @@ class Processor {
 
 		// If the queue supports bulk processing, send all of the payloads to the callback.
 		if ( true === $current_queue_settings->bulk_processing_support ) {
-			$tasks_to_delete = call_user_func( $current_queue_settings->callback, $tasks );
+
+			$successful_tasks = call_user_func( $current_queue_settings->callback, $tasks );
 
 			/**
 			 * If the callback returns fewer tasks than we passed to it, some of them didn't get
 			 * processed, so fire a hook for debugging purposes.
 			 */
-			if ( count( $tasks_to_delete ) < count( $tasks ) ) {
+			if ( count( $successful_tasks ) < count( $tasks ) ) {
+
+				$failed_tasks = array_diff( array_keys( $tasks ), $successful_tasks );
 
 				/**
 				 * Hook that fires when one or more bulk processing tasks fail to process
 				 *
-				 * @param array  $tasks_to_delete The array of task ID's returned from the callback to delete
-				 * @param array  $tasks           The array of tasks that was passed to the callback for deletion
-				 * @param string $queue_name      The name of the queue that this failure happened in
+				 * @param array  $failed_tasks     Array of tasks that have failed to process
+				 * @param array  $successful_tasks The array of task ID's returned from the callback to delete
+				 * @param array  $tasks            The array of tasks that was passed to the callback for deletion
+				 * @param string $queue_name       The name of the queue that this failure happened in
 				 */
-				do_action( 'wpqt_bulk_processing_failed', $tasks_to_delete, $tasks, $queue_name );
+				do_action( 'wpqt_bulk_processing_failed', $failed_tasks, $successful_tasks, $tasks, $queue_name );
 			}
 
 		}
 
 		// Remove all of the tasks from the queue
-		$this->remove_tasks_from_queue( $tasks_to_delete, $term_id );
+		$this->remove_tasks_from_queue( $successful_tasks, $failed_tasks );
 
-		if ( $max_tasks === $task_query->post_count || $tasks_to_delete < $task_query->post_count && false !== $current_queue_settings->update_interval ) {
+		if ( $max_tasks === $task_query->post_count || count( $successful_tasks ) < $task_query->post_count && false !== $current_queue_settings->update_interval ) {
 			// Delete the last_run meta if this queue needs to be processed again
 			delete_term_meta( $term_id, 'wpqt_queue_last_run' );
 		} else {
@@ -188,13 +226,17 @@ class Processor {
 	 * Removes tasks from the queue by either deleting them entirely, or removing the queue's term
 	 * from the task
 	 *
-	 * @param array $tasks    Array of ID's for the tasks we should remove from the queue
-	 * @param int   $queue_id Term ID of the queue we want to remove the task from
+	 * @param array $successful_tasks Array of ID's for the tasks we should remove from the queue
+	 * @param array $failed_tasks     Array of task ID's that failed, that may need retries
+	 *                                scheduled
 	 *
 	 * @access private
 	 * @return void
 	 */
-	private function remove_tasks_from_queue( $tasks, $queue_id ) {
+	private function remove_tasks_from_queue( $successful_tasks, $failed_tasks ) {
+
+		$tasks_out_of_retries = $this->schedule_retry( $failed_tasks );
+		$tasks = array_merge( $successful_tasks, $tasks_out_of_retries );
 
 		if ( ! empty( $tasks ) && is_array( $tasks ) ) {
 			foreach ( $tasks as $task ) {
@@ -202,16 +244,72 @@ class Processor {
 				// Get the queues attached to the task
 				$queues_attached = get_the_terms( $task, 'task-queue' );
 
-				// If there is more than one queue attached to the task, remove it from the current queue
-				// otherwise delete the post.
-				if ( ! empty( $queues_attached ) && 1 < count( $queues_attached ) ) {
-					wp_remove_object_terms( $task, $queue_id, 'task-queue' );
-				} else {
+				// If the task was successful, and only in the one queue, remove it.
+				if ( in_array( $task, $successful_tasks, true ) && ( ! empty( $queues_attached ) && 1 === count( $queues_attached ) ) ) {
 					wp_delete_post( $task, true );
+				} else {
+					// Remove the task from the current queue
+					wp_remove_object_terms( $task, $this->queue_id, 'task-queue' );
+				}
+
+				if ( in_array( $task, $tasks_out_of_retries, true ) ) {
+					// If the task failed too many times, put it in the "failed" queue for safe keeping.
+					wp_set_object_terms( $task, $this->queue_name . '_' . $this->failed_queue, 'task-queue', true );
 				}
 
 			}
 		}
+
+	}
+
+	/**
+	 * Schedule a task for retry, or determine it is out of retry's and should be removed from the
+	 * queue permanently
+	 *
+	 * @param array $failed_tasks Array of tasks that failed to process
+	 * @return array
+	 * @access private
+	 */
+	private function schedule_retry( $failed_tasks ) {
+
+		$tasks = [];
+
+		if ( ! empty( $failed_tasks ) && is_array( $failed_tasks ) ) {
+
+			global $wpqt_queues;
+			$retry_limit = ( ! empty( $wpqt_queues[ $this->queue_name ]->retry ) ) ? absint( $wpqt_queues[ $this->queue_name ]->retry ) : 0;
+
+			foreach ( $failed_tasks as $task ) {
+
+				/**
+				 * If this queue doesn't allow for any retries, schedule the post for deletion
+				 */
+				if ( 0 === $retry_limit ) {
+					$tasks[] = $task;
+				} else {
+
+					$current_retry = get_post_meta( $task, 'wpqt_retry', true );
+
+					if ( empty( $current_retry ) ) {
+						$current_count = 0;
+						$current_retry = [];
+					} else {
+						$current_count = ( ! empty( $current_retry[ $this->queue_name ] ) ) ? absint( $current_retry[ $this->queue_name ] ) : 0;
+					}
+
+					if ( $current_count >= $retry_limit ) {
+						$tasks[] = $task;
+					} else {
+						update_post_meta( $task, 'wpqt_retry', array_merge( $current_retry, [ $this->queue_name => $current_count + 1 ] ) );
+					}
+
+				}
+
+			}
+
+		}
+
+		return $tasks;
 
 	}
 }
