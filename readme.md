@@ -8,7 +8,7 @@ To create a new queue, you have to register it with the `dfm_register_queue()` f
 - **callback** (callable) - The callback function to do something with the actual payload. The function is passed the payload of the task it's supposed to process. *required*
 - **update_interval** (int|bool) - The interval at which the queue gets processed. You can pass something like `HOUR_IN_SECONDS` here, and that well have the queue only be processed once an hour. _Default: false_
 - **minimum_count** (int) - The minimum amount of items in the queue before it should be processed.
-- **bulk_processing_support** (bool) - Whether or not the queue can handle sending multiple payloads at once. _Default: False_
+- **bulk** (bool) - Whether or not the queue can handle sending multiple payloads at once. _Default: False_
 - **processor** (string) - The type of processor you want to use. The options currently are "async" or "cron". Both of these options technically run the processor async, and share the same processor code. It just allows you some flexibility. The async option posts a small payload to a handler which runs the processor, and the cron option just schedules a cron event to run the processor.
 - **retry** (int) - The amount of times a retry should be attempted for this particular queue. _Default: 3_
 
