@@ -147,7 +147,7 @@ class Processor {
 
 				// If the queue supports bulk processing, add the payloads to an array to pass back to the queue
 				// callback with the task ID as the key.
-				if ( true === $current_queue_settings->bulk_processing_support ) {
+				if ( true === $current_queue_settings->bulk ) {
 					$tasks[ $post->ID ] = $post->post_content;
 				} else {
 
@@ -179,7 +179,7 @@ class Processor {
 		wp_reset_postdata();
 
 		// If the queue supports bulk processing, send all of the payloads to the callback.
-		if ( true === $current_queue_settings->bulk_processing_support ) {
+		if ( true === $current_queue_settings->bulk ) {
 
 			$successful_tasks = call_user_func( $current_queue_settings->callback, $tasks );
 

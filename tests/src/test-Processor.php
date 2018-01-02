@@ -100,7 +100,7 @@ class TestProcessor extends WP_UnitTestCase {
 				'callback' => function( $data ) use( $queue ) {
 					update_option( '_test_' . $queue, $data );
 				},
-				'bulk_processing_support' => false,
+				'bulk' => false,
 			]
 		);
 
@@ -130,11 +130,11 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_2 = 'testSuccessfulTaskProcessingMultipleQueues2';
 		wpqt_register_queue( $queue_1, [
 			'callback' => [ $this, 'queue_processor_callback' ],
-			'bulk_processing_support' => false,
+			'bulk' => false,
 		] );
 		wpqt_register_queue( $queue_2, [
 			'callback' => [ $this, 'queue_processor_callback' ],
-			'bulk_processing_support' => false,
+			'bulk' => false,
 		] );
 
 		$expected_value = 'my data';
@@ -243,7 +243,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue = 'testSingleTaskFailure';
 		wpqt_register_queue( $queue, [
 			'callback' => [ $this, 'queue_processor_callback_failure' ],
-			'bulk_processing_support' => false,
+			'bulk' => false,
 		] );
 
 		$task_id = wpqt_create_task( $queue, 'some data' );
@@ -364,7 +364,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue = 'testFailedTaskRemovalForNoRetries';
 		wpqt_register_queue( $queue, [
 			'callback' => '__return_false',
-			'bulk_processing_support' => false,
+			'bulk' => false,
 			'retry' => 0,
 		] );
 
@@ -387,7 +387,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue = 'testRetryCountIncreases';
 		wpqt_register_queue( $queue, [
 			'callback' => '__return_false',
-			'bulk_processing_support' => false,
+			'bulk' => false,
 		] );
 
 		$task_id =  wpqt_create_task( $queue, 'test' );
@@ -499,14 +499,14 @@ class TestProcessor extends WP_UnitTestCase {
 			'callback' => function( $data ) {
 				return true;
 			},
-			'bulk_processing_support' => false,
+			'bulk' => false,
 		] );
 
 		wpqt_register_queue( $queue_2, [
 			'callback' => function( $data ) {
 				return false;
 			},
-			'bulk_processing_support' => false,
+			'bulk' => false,
 		] );
 
 		$task_id = wpqt_create_task( [ $queue_1, $queue_2 ], 'test' );
