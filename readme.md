@@ -10,6 +10,10 @@ To create a new queue, you have to register it with the `dfm_register_queue()` f
 - **minimum_count** (int) - The minimum amount of items in the queue before it should be processed.
 - **bulk_processing_support** (bool) - Whether or not the queue can handle sending multiple payloads at once. _Default: False_
 - **processor** (string) - The type of processor you want to use. The options currently are "async" or "cron". Both of these options technically run the processor async, and share the same processor code. It just allows you some flexibility. The async option posts a small payload to a handler which runs the processor, and the cron option just schedules a cron event to run the processor.
+- **retry** (int) - The amount of times a retry should be attempted for this particular queue. _Default: 3_
 
 ## Using the callback
 The callback that is registered with the queue is what actually handles the payload, and does something with it. If the queue supports bulk processing, it will be passed an array of payloads with the ID of the task as the key, and the payload as the value. The callback should either return the ID's of the tasks that should be completed, or `false/WP_Error`. If `false` or `WP_Error` is returned, the tasks will remain in the queue to be processed later, otherwise they will be removed from the queue. It is good to note that if your queue doesn't support bulk processing it doesn't need to return the ID of the task if successful, it can just return something like `true`.
+
+## Retries
+To use the retry system, simply add a retry count when registering your queue. Each queue can have it's own retry limit, and will be tracked independently. Once the maximum retries have been hit, the task will remain in the system, but will be removed from the queue that it hit the limit on, and will be added to a new queue called {$queue_name}_failed so it can be further investigated in the future.
