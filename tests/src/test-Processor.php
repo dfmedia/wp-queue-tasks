@@ -471,7 +471,7 @@ class TestProcessor extends WP_UnitTestCase {
 		// Third Run
 		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
 		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
-		$this->assertEquals( [ $queue_1 => 2, $queue_2 => 3 ], get_post_meta( $task_id, 'wpqt_retry', true ) );
+		$this->assertEquals( [ $queue_2 => 3 ], get_post_meta( $task_id, 'wpqt_retry', true ) );
 
 		$task_queues = get_the_terms( $task_id, $this->taxonomy );
 		$failed_term_obj_1 = get_term_by( 'name', $queue_1 . '_failed', $this->taxonomy );
@@ -479,7 +479,7 @@ class TestProcessor extends WP_UnitTestCase {
 
 		// Fourth run for second queue
 		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
-		$this->assertEquals( [ $queue_1 => 2, $queue_2 => 3 ], get_post_meta( $task_id, 'wpqt_retry', true ) );
+		$this->assertEquals( [], get_post_meta( $task_id, 'wpqt_retry', true ) );
 
 		$task_queues = get_the_terms( $task_id, $this->taxonomy );
 		$failed_term_obj_2 = get_term_by( 'name', $queue_2 . '_failed', $this->taxonomy );

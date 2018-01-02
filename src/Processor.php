@@ -298,10 +298,25 @@ class Processor {
 					}
 
 					if ( $current_count >= $retry_limit ) {
+
 						$tasks[] = $task;
+						$new_retry = $current_retry;
+						unset( $new_retry[ $this->queue_name ] );
+
+						/**
+						 * Hook that fires when we are out of retries for this particular queue
+						 *
+						 * @param int $task ID of the task that failed
+						 * @param string $queue_name Name of the queue this failure happened
+						 * @param int $queue_id Term ID of the queue this failure happened in
+						 */
+						do_action( 'wpqt_remove_task_from_queue_too_many_failures', $task, $this->queue_name, $this->queue_id );
+
 					} else {
-						update_post_meta( $task, 'wpqt_retry', array_merge( $current_retry, [ $this->queue_name => $current_count + 1 ] ) );
+						$new_retry = array_merge( $current_retry, [ $this->queue_name => $current_count + 1 ] );
 					}
+
+					update_post_meta( $task, 'wpqt_retry', $new_retry );
 
 				}
 
