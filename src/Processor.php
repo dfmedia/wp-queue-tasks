@@ -152,7 +152,7 @@ class Processor {
 				} else {
 
 					// Send one off requests to the queue callback, if it doesn't support bulk processing
-					$result = call_user_func( $current_queue_settings->callback, $post->post_content );
+					$result = call_user_func( $current_queue_settings->callback, $post->post_content, $queue_name );
 
 					// If the callback didn't fail add the task ID to the removal array
 					if ( false !== $result && ! is_wp_error( $result ) ) {
@@ -181,7 +181,7 @@ class Processor {
 		// If the queue supports bulk processing, send all of the payloads to the callback.
 		if ( true === $current_queue_settings->bulk ) {
 
-			$successful_tasks = call_user_func( $current_queue_settings->callback, $tasks );
+			$successful_tasks = call_user_func( $current_queue_settings->callback, $tasks, $queue_name );
 
 			/**
 			 * If the callback returns fewer tasks than we passed to it, some of them didn't get
