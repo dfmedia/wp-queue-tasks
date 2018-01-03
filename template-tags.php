@@ -72,7 +72,7 @@ function wpqt_register_queue( $queue_name, $args ) {
  * @return int|WP_Error
  * @access public
  */
-function wpqt_create_task( $queues, $data ) {
+function wpqt_create_task( $queues, $data, $title = '' ) {
 
 	/**
 	 * Filter to add or remove queues to add to a task.
@@ -91,9 +91,10 @@ function wpqt_create_task( $queues, $data ) {
 	do_action( 'before_wpqt_create_task', $queues, $data );
 
 	$post_data = [
-		'post_type' => 'wpqt-task',
+		'post_type'    => 'wpqt-task',
 		'post_content' => $data,
-		'post_status' => 'publish',
+		'post_title'   => $title,
+		'post_status'  => 'publish',
 	];
 
 	$result = wp_insert_post( $post_data );
