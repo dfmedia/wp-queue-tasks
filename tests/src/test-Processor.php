@@ -283,6 +283,9 @@ class TestProcessor extends WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Test to make sure a task still processes when another task in the same queue fails to process
+	 */
 	public function testSingleTaskFailureMultipleInQueue() {
 
 		$queue = 'testSingleTaskFailureMultipleInQueue';
