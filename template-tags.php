@@ -5,14 +5,14 @@
  *
  * @param string $queue_name Name of the queue you want to register. Should be slug friendly (lower cases, no spaces)
  * @param array $args {
- * 		@arg callable $callback			   The callback function to handle the payload from the task
- * 		@arg bool|int $update_interval	   The interval in which the queue should be limited to process. Leave false if you
- * 										   want it to process on every shutdown.
- * 		@arg int $minimum_count			   The minimum amount of tasks to be in the queue before processing
- * 		@arg bool $bulk_processing_support Whether or not the queue can send an array of payloads at once, or needs to
- * 										   send them one at a time for each task.
- * 		@arg string $processor             What type of processor you would like to use to process the task queue.
- *      								   Options are "async" or "cron".
+ * 		@arg callable $callback		   The callback function to handle the payload from the task
+ * 		@arg bool|int $update_interval The interval in which the queue should be limited to process. Leave false if you
+ * 									   want it to process on every shutdown.
+ * 		@arg int $minimum_count		   The minimum amount of tasks to be in the queue before processing
+ * 		@arg bool $bulk                Whether or not the queue can send an array of payloads at once, or needs to
+ * 								       send them one at a time for each task.
+ * 		@arg string $processor         What type of processor you would like to use to process the task queue.
+ *      							   Options are "async" or "cron".
  * }
  *
  * @return void
@@ -33,12 +33,12 @@ function wpqt_register_queue( $queue_name, $args ) {
 	}
 
 	$default_args = [
-		'callback'                => '',
-		'update_interval'         => false,
-		'minimum_count'           => 0,
-		'bulk_processing_support' => true,
-		'processor'               => 'async',
-		'retry'                   => 3,
+		'callback'        => '',
+		'update_interval' => false,
+		'minimum_count'   => 0,
+		'bulk'            => true,
+		'processor'       => 'async',
+		'retry'           => 3,
 	];
 
 	$args = wp_parse_args(
