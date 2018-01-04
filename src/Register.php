@@ -104,10 +104,6 @@ class Register {
 			'has_archive'           => false,
 			'rewrite'               => false,
 			'query_var'             => true,
-			'capabilities'          => [
-				'edit_posts'    => 'read',
-				'publish_posts' => 'read',
-			],
 			'show_in_rest'          => true,
 			'rest_base'             => 'wpqt-task',
 			'rest_controller_class' => 'WP_REST_Posts_Controller',
