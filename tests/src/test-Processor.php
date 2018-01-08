@@ -284,6 +284,39 @@ class TestProcessor extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test to make sure a task still processes when another task in the same queue fails to process
+	 */
+	public function testSingleTaskFailureMultipleInQueue() {
+
+		$queue = 'testSingleTaskFailureMultipleInQueue';
+		wpqt_register_queue( $queue, [
+			'bulk' => false,
+			'callback' => function( $data ) use ( $queue ) {
+				if ( 'fail' === $data ) {
+					return false;
+				} else {
+					update_option( '_test_' . $queue, $data );
+					return true;
+				}
+			},
+		] );
+
+		$success_data = 'pass';
+		$task_1 = wpqt_create_task( $queue, 'fail' );
+		$task_2 = wpqt_create_task( $queue, $success_data );
+
+		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
+
+		$processor_obj = new Processor();
+		$processor_obj->run_processor( $queue, $queue_id->term_id );
+
+		$this->assertNull( get_post( $task_2 ) );
+		$this->assertNotNull( get_post( $task_1 ) );
+		$this->assertEquals( $success_data, get_option( '_test_' . $queue ) );
+
+	}
+
+	/**
 	 * Test that a queue limited by time interval is able to re-run if more tasks need processing
 	 */
 	public function testProcessorReRunsTooManyTasks() {
