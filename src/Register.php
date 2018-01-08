@@ -51,7 +51,7 @@ class Register {
 			'public'                => false,
 			'show_in_nav_menus'     => true,
 			'show_ui'               => Utils::debug_on(),
-			'show_admin_column'     => false,
+			'show_admin_column'     => true,
 			'query_var'             => true,
 			'rewrite'               => false,
 			'labels'                => $labels,
