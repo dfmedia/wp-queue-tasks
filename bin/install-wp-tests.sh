@@ -12,8 +12,8 @@ DB_HOST=${4-localhost}
 WP_VERSION=${5-latest}
 SKIP_DB_CREATE=${6-false}
 
-WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
-WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress/}
+WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wpqt/wordpress-tests-lib}
+WP_CORE_DIR=${WP_CORE_DIR-/tmp/wpqt/wordpress/}
 
 download() {
     if [ `which curl` ]; then
