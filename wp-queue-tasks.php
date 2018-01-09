@@ -128,6 +128,9 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 			$scheduler = new \WPQueueTasks\Scheduler();
 			$scheduler->setup();
 
+			$handler = new \WPQueueTasks\Handler();
+			$handler->setup();
+
 		}
 
 	}
