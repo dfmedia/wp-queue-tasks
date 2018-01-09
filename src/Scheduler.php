@@ -102,22 +102,27 @@ class Scheduler {
 	 * @param int    $queue_id   Term ID of the queue to process
 	 *
 	 * @access private
-	 * @return void
+	 * @return \WP_Error|true
 	 */
 	private function post_to_processor( $queue_name, $queue_id ) {
+
+		if ( ! defined( 'WPQT_PROCESSOR_SECRET' ) ) {
+			return new \WP_Error( 'no-secret', __( 'You need to define the WPQT_PROCESSOR_SECRET constant in order to use this feature', 'wp-queue-tasks' ) );
+		}
 
 		$request_args = [
 			'timeout'  => 0.01,
 			'blocking' => false,
-			'body'     => [
-				'action'     => 'wpqt_process_' . $queue_name,
-				'queue_name' => $queue_name,
-				'term_id'    => $queue_id,
-			],
+			'method'   => 'PUT',
+			'body'     => wp_json_encode( [
+				'term_id' => $queue_id,
+				'secret'  => WPQT_PROCESSOR_SECRET,
+			] ),
 		];
 
-		$url = admin_url( 'admin-post.php' );
+		$url = get_rest_url( null, Handler::API_NAMESPACE . '/' . Handler::ENDPOINT_RUN . '/' . $queue_name );
 		wp_safe_remote_post( $url, $request_args );
+		return true;
 
 	}
 

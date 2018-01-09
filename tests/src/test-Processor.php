@@ -14,38 +14,7 @@ class TestProcessor extends WP_UnitTestCase {
 
 		$processor_obj = new Processor();
 		$processor_obj->setup();
-		$this->assertEquals( 10, has_action( 'init', [ $processor_obj, 'setup_processing' ] ) );
 		$this->assertEquals( 10, has_action( 'wpqt_run_processor', [ $processor_obj, 'run_processor' ] ) );
-
-	}
-
-	/**
-	 * Test that the hook fires correctly for the async handler
-	 */
-	public function testProcessQueueFromAsyncHandler() {
-
-		$expected = [
-			'queue_name' => 'testProcessQueueFromAsyncHandler',
-			'term_id' => 1,
-		];
-
-		$_POST['queue_name'] = $expected['queue_name'];
-		$_POST['term_id'] = $expected['term_id'];
-
-		add_action( 'wpqt_run_processor', function( $queue_name, $term_id ) {
-			global $_test_wpqt_run_processor_data;
-			$_test_wpqt_run_processor_data = [
-				'queue_name' => $queue_name,
-				'term_id' => $term_id,
-			];
-		}, 10, 2 );
-
-		$processor_obj = new Processor();
-		$processor_obj->process_queue();
-
-		global $_test_wpqt_run_processor_data;
-
-		$this->assertEquals( $expected, $_test_wpqt_run_processor_data );
 
 	}
 
@@ -68,24 +37,6 @@ class TestProcessor extends WP_UnitTestCase {
 		$processor_obj = new Processor();
 		$actual = $processor_obj->run_processor( 'sometest', 2 );
 		$this->assertFalse( $actual );
-
-	}
-
-	/**
-	 * Test to make sure the proper hooks are added for handling async requests only when the queue
-	 * is using that as the processor
-	 */
-	public function testProcessingSetup() {
-
-		$queue = 'testProcessingSetup';
-		wpqt_register_queue( $queue, [ 'callback' => '__return_true' ] );
-		wpqt_register_queue( 'someOtherQueue', [ 'callback' => '__return_true', 'processor' => 'cron' ] );
-
-		$processor_obj = new Processor();
-		$processor_obj->setup_processing();
-
-		$this->assertTrue( has_action( 'admin_post_nopriv_wpqt_process_' . $queue ) );
-		$this->assertFalse( has_action( 'admin_post_nopriv_wpgt_process_someOtherQueue' ) );
 
 	}
 

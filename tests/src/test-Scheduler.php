@@ -129,6 +129,34 @@ class TestScheduler extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Run a test in a separate process with a clean scope that doesn't have the
+	 * WPQT_PROCESSOR_SECRET constant defined, so we can make sure it doesn't post to the async
+	 * handler
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testNoSecretDefinedFailure() {
+
+		$queue = 'testNoSecretDefinedFailure';
+		wpqt_register_queue( $queue, [ 'callback' => '__return_true' ] );
+		wpqt_create_task( $queue, 'test' );
+
+		add_action( 'http_api_debug', function( $response ) {
+			global $test_request_response;
+			$test_request_response = $response;
+		} );
+
+		$scheduler_obj = new Scheduler();
+		$scheduler_obj->process_queue();
+
+		global $test_request_response;
+
+		$this->assertEmpty( $test_request_response );
+
+	}
+
+	/**
 	 * Tests to make sure that a processor doesn't run too frequently
 	 */
 	public function testProcessorSkipsQueueNotTimeToRun() {

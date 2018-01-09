@@ -6,6 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'WPQueueTasks\\Handler' => $baseDir . '/src/Handler.php',
     'WPQueueTasks\\Processor' => $baseDir . '/src/Processor.php',
     'WPQueueTasks\\Register' => $baseDir . '/src/Register.php',
     'WPQueueTasks\\Scheduler' => $baseDir . '/src/Scheduler.php',

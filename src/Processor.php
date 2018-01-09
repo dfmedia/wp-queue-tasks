@@ -35,43 +35,7 @@ class Processor {
 	 * Sets up all of the actions we need for the class
 	 */
 	public function setup() {
-		add_action( 'init', [ $this, 'setup_processing' ] );
 		add_action( 'wpqt_run_processor', [ $this, 'run_processor' ], 10, 2 );
-	}
-
-	/**
-	 * Sets up the handlers for each of the queues
-	 *
-	 * @access public
-	 * @return void
-	 */
-	public function setup_processing() {
-
-		global $wpqt_queues;
-
-		if ( ! empty( $wpqt_queues ) && is_array( $wpqt_queues ) ) {
-			foreach ( $wpqt_queues as $queue_name => $queue_args ) {
-				if ( 'async' === $queue_args->processor ) {
-					add_action( 'admin_post_nopriv_wpqt_process_' . $queue_name, [ $this, 'process_queue' ] );
-				}
-			}
-		}
-	}
-
-	/**
-	 * Handles the incoming async post request, and creates the hook for running the processor
-	 *
-	 * @access public
-	 * @return void
-	 */
-	public function process_queue() {
-
-		// Accept some data from the request
-		$queue_name = empty( $_POST['queue_name'] ) ? '' : $_POST['queue_name'];
-		$term_id = empty( $_POST['term_id'] ) ? 0 : $_POST['term_id'];
-
-		do_action( 'wpqt_run_processor', $queue_name, $term_id );
-
 	}
 
 	/**
