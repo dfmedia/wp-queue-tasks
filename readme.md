@@ -17,3 +17,6 @@ The callback that is registered with the queue is what actually handles the payl
 
 ## Retries
 To use the retry system, simply add a retry count when registering your queue. Each queue can have it's own retry limit, and will be tracked independently. Once the maximum retries have been hit, the task will remain in the system, but will be removed from the queue that it hit the limit on, and will be added to a new queue called {$queue_name}_failed so it can be further investigated in the future.
+
+## PHP 7.0+
+This plugin requires php version 7.0 and up. This is because of the exception handling we are doing for processor callbacks. This is needed so that a callback throwing an error doesn't hold up the entire queue from processing.

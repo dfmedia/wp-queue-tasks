@@ -115,8 +115,25 @@ class Processor {
 					$tasks[ $post->ID ] = $post->post_content;
 				} else {
 
-					// Send one off requests to the queue callback, if it doesn't support bulk processing
-					$result = call_user_func( $current_queue_settings->callback, $post->post_content, $queue_name );
+					// Prevent an error in the callback from holding up the entire queue
+					try {
+						// Send one off requests to the queue callback, if it doesn't support bulk processing
+						$result = call_user_func( $current_queue_settings->callback, $post->post_content, $queue_name );
+					} catch ( \Throwable $error ) {
+
+						/**
+						 * Hook that fires if an error occurs in the callback
+						 *
+						 * @param \Throwable $error      The error thrown from the callback
+						 * @param \WP_Post   $post       The post object for the task that threw the error
+						 * @param string     $queue_name Name of the queue that this failure happened in
+						 */
+						do_action( 'wpqt_single_task_error', $error, $post, $queue_name );
+						$result = new \WP_Error(
+							'callback-error',
+							sprintf( __( 'Could not process task ID: %d because of an error', 'wp-queue-tasks' ), $post->ID )
+						);
+					}
 
 					// If the callback didn't fail add the task ID to the removal array
 					if ( false !== $result && ! is_wp_error( $result ) ) {
@@ -145,7 +162,19 @@ class Processor {
 		// If the queue supports bulk processing, send all of the payloads to the callback.
 		if ( true === $current_queue_settings->bulk ) {
 
-			$successful_tasks = call_user_func( $current_queue_settings->callback, $tasks, $queue_name );
+			try {
+				$successful_tasks = call_user_func( $current_queue_settings->callback, $tasks, $queue_name );
+			} catch ( \Throwable $error ) {
+
+				/**
+				 * Hook that fires if an error occurs within the callback
+				 *
+				 * @param \Throwable $error      The error thrown by the callback
+				 * @param array      $tasks      The task ID's and tasks passed to the callback
+				 * @param string     $queue_name Name of the queue the failure happened in
+				 */
+				do_action( 'wpqt_bulk_processing_error', $error, $tasks, $queue_name );
+			}
 
 			/**
 			 * If the callback returns fewer tasks than we passed to it, some of them didn't get

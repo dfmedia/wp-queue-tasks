@@ -6,7 +6,8 @@
  * Author:          Ryan Kanner, Digital First Media
  * Text Domain:     wp-queue-tasks
  * Domain Path:     /languages
- * Version:         0.2.0
+ * Version:         1.0.0
+ * Requires PHP:    7.0
  *
  * @package         WP_Queue_Tasks
  */
@@ -69,7 +70,7 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 
 			// Plugin version.
 			if ( ! defined( 'WPQT_VERSION' ) ) {
-				define( 'WPQT_VERSION', '0.2.0' );
+				define( 'WPQT_VERSION', '1.0.0' );
 			}
 
 			// Plugin Folder Path.

@@ -508,6 +508,95 @@ class TestProcessor extends WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Test for when a task in a queue has a failure in it's callback, it should catch the error,
+	 * fire a hook, and continue processing.
+	 */
+	public function testSingleTaskThrowsError() {
+
+		$queue = 'testSingleTaskThrowsError';
+		$data = [ 'test' => 'test value' ];
+		wpqt_register_queue( $queue, [
+			'callback' => function( $data ) {
+				$data = json_decode( $data, true );
+				$grab_data = $data['test'];
+				return true;
+			},
+			'bulk' => false,
+		] );
+
+		$task_1 = wpqt_create_task( $queue, wp_json_encode( [] ) );
+		$task_2 = wpqt_create_task( $queue, wp_json_encode( $data ) );
+		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
+
+		add_action( 'wpqt_single_task_error', function( $error, $post, $queue_name ) {
+			global $_test_wpqt_single_task_error;
+			$_test_wpqt_single_task_error = [
+				'post_id' => $post->ID,
+				'queue_name' => $queue_name,
+			];
+		}, 10, 3 );
+
+		$processor_obj = new Processor();
+		$processor_obj->run_processor( $queue, $queue_id->term_id );
+
+		global $_test_wpqt_single_task_error;
+		$expected = [
+			'post_id' => $task_1,
+			'queue_name' => $queue,
+		];
+
+		$this->assertEquals( $expected, $_test_wpqt_single_task_error );
+		$this->assertNull( get_post( $task_2 ) );
+		$this->assertNotNull( get_post( $task_1 ) );
+
+	}
+
+	/**
+	 * Test for when a callback for a bulk processor throws an error
+	 */
+	public function testBulkTaskFailure() {
+
+		$queue = 'testBulkTaskFailure';
+		wpqt_register_queue( $queue, [
+			'callback' => function( $data ) {
+				if ( is_array( $data ) && ! empty( $data ) ) {
+					foreach ( $data as $id => $payload ) {
+						$payload = json_decode( $payload, true );
+						$get_data = $payload['test'];
+					}
+				}
+				return array_keys( $data );
+			}
+		] );
+
+		add_action( 'wpqt_bulk_processing_error', function( $error, $tasks, $queue_name) {
+			global $_test_wpqt_bulk_processing_error;
+			$_test_wpqt_bulk_processing_error = [
+				'task_ids' => array_keys( $tasks ),
+				'queue_name' => $queue_name,
+			];
+		}, 10, 3 );
+
+		$task_1 = wpqt_create_task( $queue, wp_json_encode( [ 'test' => 'test data' ] ) );
+		$task_2 = wpqt_create_task( $queue, wp_json_encode( [] ) );
+		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
+
+		$processor_obj = new Processor();
+		$processor_obj->run_processor( $queue, $queue_id->term_id );
+
+		global $_test_wpqt_bulk_processing_error;
+		$expected = [
+			'task_ids' => [ $task_1, $task_2 ],
+			'queue_name' => $queue,
+		];
+
+		$this->assertEquals( $expected, $_test_wpqt_bulk_processing_error );
+		$this->assertNotNull( get_post( $task_1 ) );
+		$this->assertNotNull( get_post( $task_2 ) );
+
+	}
+
 	public function queue_processor_callback( $data ) {
 
 		$existing_data = get_option( '_test_queue_processor_callback', [] );
