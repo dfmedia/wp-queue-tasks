@@ -66,36 +66,45 @@ function wpqt_register_queue( $queue_name, $args ) {
 /**
  * Creates the task post to be added to a queue.
  *
- * @param string|array $queues Either a single queue to add the task to, or an array of queue names to add the task to
- * @param string $data The data that should be processed by the queue's callback function
+ * @param string|array $queues Either a single queue to add the task to, or an array of queue names
+ *                             to add the task to
+ * @param array        $args   Additional args you want to pass to the wp_insert_post function
  *
  * @return int|WP_Error
  * @access public
  */
-function wpqt_create_task( $queues, $data, $title = '' ) {
+function wpqt_create_task( $queues, $data, $args = [] ) {
 
 	/**
 	 * Filter to add or remove queues to add to a task.
 	 *
 	 * @param string|array $queues The queues the task is going to be added to
-	 * @param string $data The data to be saved in the task
+	 * @param string       $data   The data to be saved in the task
+	 * @param array        $args   Extra arguments to add to wp_insert_post
+	 *
+	 * @return string|array
 	 */
-	$queues = apply_filters( 'wpqt_task_create_queues', $queues, $data );
+	$queues = apply_filters( 'wpqt_task_create_queues', $queues, $data, $args );
 
 	/**
 	 * Hook that fires before a new task is created
 	 *
 	 * @param string|array $queues The queues the task is going to be added to
-	 * @param string $data The data to be stored in the_content of the task, and processed by the queue's callback
+	 * @param string       $data   The data to be stored in the_content of the task, and processed by the queue's callback
+	 * @param array        $args   Extra arguments to add to wp_insert_post
 	 */
-	do_action( 'before_wpqt_create_task', $queues, $data );
+	do_action( 'before_wpqt_create_task', $queues, $data, $args );
 
-	$post_data = [
+	$task_args = [
 		'post_type'    => 'wpqt-task',
 		'post_content' => $data,
-		'post_title'   => $title,
 		'post_status'  => 'publish',
 	];
+
+	/**
+	 * Set the $args array first since we want to override some of the fields
+	 */
+	$post_data = array_merge( $args, $task_args );
 
 	$result = wp_insert_post( $post_data );
 
@@ -105,10 +114,11 @@ function wpqt_create_task( $queues, $data, $title = '' ) {
 		 * Hook to fire if we failed to create the actual task.
 		 *
 		 * @param string|array $queues The queues the task is going to be added to
-		 * @param string $data The data to be stored in the_content of the task, and processed by the queue's callback
-		 * @param WP_Error $result The error object if the post failed to be created
+		 * @param string       $data   The data to be stored in the_content of the task, and processed by the queue's callback
+		 * @param WP_Error     $result The error object if the post failed to be created
+		 * @param array        $args   Extra arguments to add to wp_insert_post
 		 */
-		do_action( 'wpqt_create_task_failed', $queues, $data, $result );
+		do_action( 'wpqt_create_task_failed', $queues, $data, $result, $args );
 	} else {
 
 		/**
@@ -120,10 +130,11 @@ function wpqt_create_task( $queues, $data, $title = '' ) {
 		 * Hook that fires after a task has been created
 		 *
 		 * @param string|array $queues The queues the task is going to be added to
-		 * @param string $data The data to be stored in the_content of the task, and processed by the queue's callback
-		 * @param int $result The ID of the task post
+		 * @param string       $data   The data to be stored in the_content of the task, and processed by the queue's callback
+		 * @param int          $result The ID of the task post
+		 * @param array        $args   Extra arguments to add to wp_insert_post
 		 */
-		do_action( 'after_wpqt_create_task', $queues, $data, $result );
+		do_action( 'after_wpqt_create_task', $queues, $data, $result, $args );
 	}
 
 	return $result;
