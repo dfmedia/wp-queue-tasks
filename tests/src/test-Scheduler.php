@@ -24,7 +24,7 @@ class TestScheduler extends WP_UnitTestCase {
 		wpqt_register_queue( 'testProcessorDoesntRun', [ 'callback' => '__return_true', 'processor' => 'cron' ] );
 		$scheduler_obj = new Scheduler();
 		$scheduler_obj->process_queue();
-		$this->assertFalse( wp_next_scheduled( 'wpqt_run_processor' ) );
+		$this->assertFalse( wp_next_scheduled( 'wp_queue_tasks_run_processor' ) );
 
 	}
 
@@ -99,7 +99,7 @@ class TestScheduler extends WP_UnitTestCase {
 
 		$term_obj = get_term_by( 'name', $queue, 'task-queue' );
 
-		$actual = wp_next_scheduled( 'wpqt_run_processor', [ 'queue_name' => $queue, 'term_id' => $term_obj->term_id ] );
+		$actual = wp_next_scheduled( 'wp_queue_tasks_run_processor', [ 'queue_name' => $queue, 'term_id' => $term_obj->term_id ] );
 		$this->assertNotFalse( $actual );
 		$this->assertEquals( 'locked', Utils::is_queue_process_locked( $queue ) );
 
@@ -130,7 +130,7 @@ class TestScheduler extends WP_UnitTestCase {
 
 	/**
 	 * Run a test in a separate process with a clean scope that doesn't have the
-	 * WPQT_PROCESSOR_SECRET constant defined, so we can make sure it doesn't post to the async
+	 * WP_QUEUE_TASKS_PROCESSOR_SECRET constant defined, so we can make sure it doesn't post to the async
 	 * handler
 	 *
 	 * @runInSeparateProcess

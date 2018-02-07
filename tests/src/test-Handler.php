@@ -13,8 +13,8 @@ class TestHandler extends WP_UnitTestCase {
 		do_action( 'rest_api_init' );
 
 		$this->secret = 'thisismysecret';
-		if ( ! defined( 'WPQT_PROCESSOR_SECRET' ) ) {
-			define( 'WPQT_PROCESSOR_SECRET', $this->secret );
+		if ( ! defined( 'WP_QUEUE_TASKS_PROCESSOR_SECRET' ) ) {
+			define( 'WP_QUEUE_TASKS_PROCESSOR_SECRET', $this->secret );
 		}
 	}
 

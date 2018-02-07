@@ -54,7 +54,7 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 			 *
 			 * @param object $instance Instance of the current WPQueueTasks class
 			 */
-			do_action( 'wpqt_init', self::$instance );
+			do_action( 'wp_queue_tasks_init', self::$instance );
 
 			return self::$instance;
 
@@ -69,23 +69,23 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 		private function setup_constants() {
 
 			// Plugin version.
-			if ( ! defined( 'WPQT_VERSION' ) ) {
-				define( 'WPQT_VERSION', '1.0.0' );
+			if ( ! defined( 'WP_QUEUE_TASKS_VERSION' ) ) {
+				define( 'WP_QUEUE_TASKS_VERSION', '1.0.0' );
 			}
 
 			// Plugin Folder Path.
-			if ( ! defined( 'WPQT_PLUGIN_DIR' ) ) {
-				define( 'WPQT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+			if ( ! defined( 'WP_QUEUE_TASKS_PLUGIN_DIR' ) ) {
+				define( 'WP_QUEUE_TASKS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 			}
 
 			// Plugin Folder URL.
-			if ( ! defined( 'WPQT_PLUGIN_URL' ) ) {
-				define( 'WPQT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+			if ( ! defined( 'WP_QUEUE_TASKS_PLUGIN_URL' ) ) {
+				define( 'WP_QUEUE_TASKS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 			}
 
 			// Plugin Root File.
-			if ( ! defined( 'WPQT_PLUGIN_FILE' ) ) {
-				define( 'WPQT_PLUGIN_FILE', __FILE__ );
+			if ( ! defined( 'WP_QUEUE_TASKS_PLUGIN_FILE' ) ) {
+				define( 'WP_QUEUE_TASKS_PLUGIN_FILE', __FILE__ );
 			}
 
 		}
@@ -99,8 +99,8 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 		 */
 		private function includes() {
 
-			if ( file_exists( WPQT_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
-				require_once( WPQT_PLUGIN_DIR . 'vendor/autoload.php' );
+			if ( file_exists( WP_QUEUE_TASKS_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
+				require_once( WP_QUEUE_TASKS_PLUGIN_DIR . 'vendor/autoload.php' );
 			} else {
 				throw new Exception( __( 'Could not find autoloader file to include all files' ) );
 			}
@@ -108,7 +108,7 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 			/**
 			 * Require non-autoloaded files
 			 */
-			require_once( WPQT_PLUGIN_DIR . 'template-tags.php' );
+			require_once( WP_QUEUE_TASKS_PLUGIN_DIR . 'template-tags.php' );
 
 		}
 
@@ -144,7 +144,7 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
  * @return Object|WPQueueTasks Instance of the WPQueueTasks object
  * @access public
  */
-function wpqt_init() {
+function wp_queue_tasks_init() {
 
 	/**
 	 * Returns an instance of the WPQueueTasks class
@@ -157,4 +157,4 @@ function wpqt_init() {
  * Setup the class early within the after_setup_theme class so the access functions are available
  * for other plugins to use.
  */
-add_action( 'after_setup_theme', 'wpqt_init', 1 );
+add_action( 'after_setup_theme', 'wp_queue_tasks_init', 1 );

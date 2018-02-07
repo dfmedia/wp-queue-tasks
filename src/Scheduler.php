@@ -106,8 +106,8 @@ class Scheduler {
 	 */
 	private function post_to_processor( $queue_name, $queue_id ) {
 
-		if ( ! defined( 'WPQT_PROCESSOR_SECRET' ) ) {
-			return new \WP_Error( 'no-secret', __( 'You need to define the WPQT_PROCESSOR_SECRET constant in order to use this feature', 'wp-queue-tasks' ) );
+		if ( ! defined( 'WP_QUEUE_TASKS_PROCESSOR_SECRET' ) ) {
+			return new \WP_Error( 'no-secret', __( 'You need to define the WP_QUEUE_TASKS_PROCESSOR_SECRET constant in order to use this feature', 'wp-queue-tasks' ) );
 		}
 
 		$request_args = [
@@ -116,7 +116,7 @@ class Scheduler {
 			'method'   => 'PUT',
 			'body'     => wp_json_encode( [
 				'term_id' => $queue_id,
-				'secret'  => WPQT_PROCESSOR_SECRET,
+				'secret'  => WP_QUEUE_TASKS_PROCESSOR_SECRET,
 			] ),
 		];
 
@@ -137,7 +137,7 @@ class Scheduler {
 	 * @return void
 	 */
 	private function schedule_cron( $queue_name, $queue_id ) {
-		wp_schedule_single_event( time(), 'wpqt_run_processor', [
+		wp_schedule_single_event( time(), 'wp_queue_tasks_run_processor', [
 			'queue_name' => $queue_name,
 			'term_id'    => $queue_id,
 		] );
