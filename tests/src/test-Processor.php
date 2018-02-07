@@ -14,7 +14,7 @@ class TestProcessor extends WP_UnitTestCase {
 
 		$processor_obj = new Processor();
 		$processor_obj->setup();
-		$this->assertEquals( 10, has_action( 'wpqt_run_processor', [ $processor_obj, 'run_processor' ] ) );
+		$this->assertEquals( 10, has_action( 'wp_queue_tasks_run_processor', [ $processor_obj, 'run_processor' ] ) );
 
 	}
 
@@ -152,7 +152,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$task_1_id = wpqt_create_task( $queue, 'test data' );
 		$task_2_id = wpqt_create_task( $queue, 'some other data' );
 
-		add_action( 'wpqt_bulk_processing_failed', function( $failed_tasks, $tasks_to_delete, $tasks, $queue_name ) {
+		add_action( 'wp_queue_tasks_bulk_processing_failed', function( $failed_tasks, $tasks_to_delete, $tasks, $queue_name ) {
 			global $_test_wpqt_bulk_processing_failed;
 			$_test_wpqt_bulk_processing_failed = [
 				'failed_tasks' => count( $failed_tasks ),
@@ -199,7 +199,7 @@ class TestProcessor extends WP_UnitTestCase {
 
 		$task_id = wpqt_create_task( $queue, 'some data' );
 
-		add_action( 'wpqt_single_task_failed', function( $failed_tasks, $tasks_to_delete, $post, $result, $queue_name ) {
+		add_action( 'wp_queue_tasks_single_task_failed', function( $failed_tasks, $tasks_to_delete, $post, $result, $queue_name ) {
 			global $_test_wpqt_single_task_failed;
 			$_test_wpqt_single_task_failed = [
 				'failed_tasks' => $failed_tasks,
@@ -280,7 +280,7 @@ class TestProcessor extends WP_UnitTestCase {
 			'update_interval' => HOUR_IN_SECONDS,
 		] );
 
-		add_filter( 'wpqt_max_tasks_to_process', function( $max ) {
+		add_filter( 'wp_queue_tasks_max_tasks_to_process', function( $max ) {
 			return 2;
 		} );
 
@@ -301,7 +301,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$scheduler_obj = new \WPQueueTasks\Scheduler();
 		$this->assertTrue( $method->invoke( $scheduler_obj, $queue, $queue_id->term_id, 2 ) );
 
-		add_filter( 'wpqt_max_tasks_to_process', function( $max ) {
+		add_filter( 'wp_queue_tasks_max_tasks_to_process', function( $max ) {
 			return 100;
 		}, 100 );
 
@@ -529,7 +529,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$task_2 = wpqt_create_task( $queue, wp_json_encode( $data ) );
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
-		add_action( 'wpqt_single_task_error', function( $error, $post, $queue_name ) {
+		add_action( 'wp_queue_tasks_single_task_error', function( $error, $post, $queue_name ) {
 			global $_test_wpqt_single_task_error;
 			$_test_wpqt_single_task_error = [
 				'post_id' => $post->ID,
@@ -570,7 +570,7 @@ class TestProcessor extends WP_UnitTestCase {
 			}
 		] );
 
-		add_action( 'wpqt_bulk_processing_error', function( $error, $tasks, $queue_name) {
+		add_action( 'wp_queue_tasks_bulk_processing_error', function( $error, $tasks, $queue_name ) {
 			global $_test_wpqt_bulk_processing_error;
 			$_test_wpqt_bulk_processing_error = [
 				'task_ids' => array_keys( $tasks ),

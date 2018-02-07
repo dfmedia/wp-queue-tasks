@@ -35,7 +35,7 @@ class Processor {
 	 * Sets up all of the actions we need for the class
 	 */
 	public function setup() {
-		add_action( 'wpqt_run_processor', [ $this, 'run_processor' ], 10, 2 );
+		add_action( 'wp_queue_tasks_run_processor', [ $this, 'run_processor' ], 10, 2 );
 	}
 
 	/**
@@ -75,7 +75,7 @@ class Processor {
 		 *
 		 * @return int
 		 */
-		$max_tasks = apply_filters( 'wpqt_max_tasks_to_process', 100, $queue_name, $term_id );
+		$max_tasks = apply_filters( 'wp_queue_tasks_max_tasks_to_process', 100, $queue_name, $term_id );
 
 		$task_args = [
 			'post_type'      => 'wpqt-task',
@@ -128,7 +128,7 @@ class Processor {
 						 * @param \WP_Post   $post       The post object for the task that threw the error
 						 * @param string     $queue_name Name of the queue that this failure happened in
 						 */
-						do_action( 'wpqt_single_task_error', $error, $post, $queue_name );
+						do_action( 'wp_queue_tasks_single_task_error', $error, $post, $queue_name );
 						$result = new \WP_Error(
 							'callback-error',
 							sprintf( __( 'Could not process task ID: %d because of an error', 'wp-queue-tasks' ), $post->ID )
@@ -151,7 +151,7 @@ class Processor {
 						 * @param false|\WP_Error $result          The value returned by the callback
 						 * @param string          $queue_name      The name of the queue that this failure happened in
 						 */
-						do_action( 'wpqt_single_task_failed', $failed_tasks, $successful_tasks, $post, $result, $queue_name );
+						do_action( 'wp_queue_tasks_single_task_failed', $failed_tasks, $successful_tasks, $post, $result, $queue_name );
 					}
 				}
 
@@ -173,7 +173,7 @@ class Processor {
 				 * @param array      $tasks      The task ID's and tasks passed to the callback
 				 * @param string     $queue_name Name of the queue the failure happened in
 				 */
-				do_action( 'wpqt_bulk_processing_error', $error, $tasks, $queue_name );
+				do_action( 'wp_queue_tasks_bulk_processing_error', $error, $tasks, $queue_name );
 			}
 
 			/**
@@ -192,7 +192,7 @@ class Processor {
 				 * @param array  $tasks            The array of tasks that was passed to the callback for deletion
 				 * @param string $queue_name       The name of the queue that this failure happened in
 				 */
-				do_action( 'wpqt_bulk_processing_failed', $failed_tasks, $successful_tasks, $tasks, $queue_name );
+				do_action( 'wp_queue_tasks_bulk_processing_failed', $failed_tasks, $successful_tasks, $tasks, $queue_name );
 			}
 
 		}

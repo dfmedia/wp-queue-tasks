@@ -67,7 +67,7 @@ class Handler {
 			);
 		}
 
-		do_action( 'wpqt_run_processor', $queue_name, $term_id );
+		do_action( 'wp_queue_tasks_run_processor', $queue_name, $term_id );
 
 		return rest_ensure_response( sprintf( __( '%s queue processed', 'wp-queue-tasks' ), $queue_name ) );
 
@@ -86,9 +86,9 @@ class Handler {
 		$body = json_decode( $request->get_body(), true );
 
 		if (
-			! defined( 'WPQT_PROCESSOR_SECRET' ) ||
+			! defined( 'WP_QUEUE_TASKS_PROCESSOR_SECRET' ) ||
 			! isset( $body['secret'] ) ||
-			! hash_equals( WPQT_PROCESSOR_SECRET, $body['secret'] )
+			! hash_equals( WP_QUEUE_TASKS_PROCESSOR_SECRET, $body['secret'] )
 		) {
 			return new \WP_Error( 'no-secret', __( 'Secret must be defined and passed to the request for the processor to run', 'wp-queue-tasks' ) );
 		}

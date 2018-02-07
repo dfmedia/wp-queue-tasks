@@ -50,7 +50,7 @@ function wpqt_register_queue( $queue_name, $args ) {
 		 * @param string $queue_name Name of the queue we are registering
 		 * @return array $args The args array should be returned
 		 */
-		apply_filters( 'wpqt_queue_registration_args', $args, $queue_name ),
+		apply_filters( 'wp_queue_tasks_queue_registration_args', $args, $queue_name ),
 		$default_args
 	);
 
@@ -84,7 +84,7 @@ function wpqt_create_task( $queues, $data, $args = [] ) {
 	 *
 	 * @return string|array
 	 */
-	$queues = apply_filters( 'wpqt_task_create_queues', $queues, $data, $args );
+	$queues = apply_filters( 'wp_queue_tasks_task_create_queues', $queues, $data, $args );
 
 	/**
 	 * Hook that fires before a new task is created
@@ -93,7 +93,7 @@ function wpqt_create_task( $queues, $data, $args = [] ) {
 	 * @param string       $data   The data to be stored in the_content of the task, and processed by the queue's callback
 	 * @param array        $args   Extra arguments to add to wp_insert_post
 	 */
-	do_action( 'before_wpqt_create_task', $queues, $data, $args );
+	do_action( 'wp_queue_tasks_before_create_task', $queues, $data, $args );
 
 	$task_args = [
 		'post_type'    => 'wpqt-task',
@@ -118,7 +118,7 @@ function wpqt_create_task( $queues, $data, $args = [] ) {
 		 * @param WP_Error     $result The error object if the post failed to be created
 		 * @param array        $args   Extra arguments to add to wp_insert_post
 		 */
-		do_action( 'wpqt_create_task_failed', $queues, $data, $result, $args );
+		do_action( 'wp_queue_tasks_create_task_failed', $queues, $data, $result, $args );
 	} else {
 
 		/**
@@ -134,7 +134,7 @@ function wpqt_create_task( $queues, $data, $args = [] ) {
 		 * @param int          $result The ID of the task post
 		 * @param array        $args   Extra arguments to add to wp_insert_post
 		 */
-		do_action( 'after_wpqt_create_task', $queues, $data, $result, $args );
+		do_action( 'wp_queue_tasks_after_create_task', $queues, $data, $result, $args );
 	}
 
 	return $result;
