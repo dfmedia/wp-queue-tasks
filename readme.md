@@ -15,6 +15,65 @@ To create a new queue, you have to register it with the `dfm_register_queue()` f
 ## Using the callback
 The callback that is registered with the queue is what actually handles the payload, and does something with it. If the queue supports bulk processing, it will be passed an array of payloads with the ID of the task as the key, and the payload as the value. The callback should either return the ID's of the tasks that should be completed, or `false/WP_Error`. If `false` or `WP_Error` is returned, the tasks will remain in the queue to be processed later, otherwise they will be removed from the queue. It is good to note that if your queue doesn't support bulk processing it doesn't need to return the ID of the task if successful, it can just return something like `true`.
 
+## Code Samples
+Simple example of processing a single task at a time, and storing the contents of the task in an option.
+```php
+wpqt_register_queue( 'my-queue', [
+    'callback' => 'sample_callback',
+    'processor' => 'cron',
+    'retry' => 5,
+    'bulk' => false,
+] );
+
+wpqt_create_task( 'my-queue', 'sample data' );
+
+function sample_callback( $data, $queue ) {
+    $result = update_option( 'my_sample_option_' . $queue, $data );
+    return $result;
+}
+```
+Example of bulk processing some tasks. In this example, we set the minimum count to 10 so we let the queue build up some tasks for us to process in bulk. When setting bulk to true, your processor callback will receive an array of tasks with the key being the ID of the task, and the value being the data stored in the task. To signal the processor that the callback processed a task correctly, you should return the ID of the successfully completed task in an array. See the example below:
+```php
+wpqt_register_queue( 'my-queue', [
+    'callback' => 'sample_callback',
+    'bulk' => true,
+    'minimum_count' => 10,
+] );
+
+$i = 0;
+for ( $i < 10; $i++; ) {
+    wpgt_create_task( 'my-queue', 'sample data #' . $i );
+}
+
+function sample_callback( $data, $queue ) {
+    $successful = [];
+    if ( ! empty( $data ) && is_array( $data ) {
+        foreach ( $data as $id => $payload ) {
+            $result = update_option( 'my_sample_option_' . $id, $payload );
+            if ( true === $result ) {
+                $successful[] = $id;
+            }
+        }
+    }
+    return $successful;
+}
+```
+You can also use the `update_interval` argument to limit the processor to only running at your set interval. Below is an example of this.
+```php
+wpqt_register_queue( 'my-queue', [
+    'callback' => 'sample_callback',
+    'update_interval' => HOUR_IN_SECONDS,
+    'bulk' => false,
+] );
+
+wpqt_create_task( 'my-queue', 'sample data' );
+
+function sample_callback( $data, $queue ) {
+    $result = update_option( 'my_sample_data_' . $queue, $data );
+    return $result;
+}
+```
+
 ## Retries
 To use the retry system, simply add a retry count when registering your queue. Each queue can have it's own retry limit, and will be tracked independently. Once the maximum retries have been hit, the task will remain in the system, but will be removed from the queue that it hit the limit on, and will be added to a new queue called {$queue_name}_failed so it can be further investigated in the future.
 
