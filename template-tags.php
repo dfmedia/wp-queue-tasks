@@ -97,7 +97,7 @@ function wpqt_create_task( $queues, $data, $args = [] ) {
 
 	$task_args = [
 		'post_type'    => 'wpqt-task',
-		'post_content' => $data,
+		'post_content' => wp_filter_post_kses( $data ),
 		'post_status'  => 'publish',
 	];
 
