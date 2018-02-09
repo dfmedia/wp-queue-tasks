@@ -80,7 +80,7 @@ class Processor {
 		$task_args = [
 			'post_type'      => 'wpqt-task',
 			'post_status'    => 'publish',
-			'posts_per_page' => $max_tasks,
+			'posts_per_page' => absint( $max_tasks ),
 			'orderby'        => 'date',
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
