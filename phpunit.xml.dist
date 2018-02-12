@@ -13,7 +13,6 @@
 	</testsuites>
 	<filter>
 		<whitelist processUncoveredFilesFromWhitelist="true">
-			<file>./wp-queue-tasks.php</file>
 			<file>./template-tags.php</file>
 			<directory suffix=".php">./src/</directory>
 		</whitelist>
