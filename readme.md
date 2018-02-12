@@ -1,4 +1,7 @@
 # WP Queue Tasks
+[![Build Status](https://travis-ci.org/dfmedia/wp-queue-tasks.svg?branch=master)](https://travis-ci.org/dfmedia/wp-queue-tasks)
+[![codecov](https://codecov.io/gh/dfmedia/wp-queue-tasks/branch/master/graph/badge.svg)](https://codecov.io/gh/dfmedia/wp-queue-tasks)
+
 This plugin create's a queue to process tasks. The architecture is pretty straight forward. There is a task post type, where a "task" post gets added to. The task post can be attached to a "queue" which is just a term within the "queues" taxonomy. On every admin shutdown hook, we find all of the queues that need processing, and then post an async request to `admin_post` for each of the queues, and then process the queue.
 
 The idea of the queue is for it to be a dumb processor that simply recognizes that there are tasks to process. It's up to the callback of the registered queue to do something with the payload.
