@@ -132,6 +132,10 @@ if ( ! class_exists( 'WPQueueTasks' ) ) {
 			$handler = new \WPQueueTasks\Handler();
 			$handler->setup();
 
+			if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
+				WP_CLI::add_command( 'queue', '\WPQueueTasks\CLI' );
+			}
+
 		}
 
 	}
