@@ -37,7 +37,7 @@ class Handler {
 	public function register_rest_endpoint() {
 
 		register_rest_route(
-			self::API_NAMESPACE, '/' . self::ENDPOINT_RUN . '/(?P<queue>[\w]+)', [
+			self::API_NAMESPACE, '/' . self::ENDPOINT_RUN . '/(?P<queue>[\w|-]+)', [
 				'methods'             => 'PUT',
 				'callback'            => [ $this, 'run_queue_processor' ],
 				'permission_callback' => [ $this, 'check_rest_permissions' ],
