@@ -68,6 +68,7 @@ function wpqt_register_queue( $queue_name, $args ) {
  *
  * @param string|array $queues Either a single queue to add the task to, or an array of queue names
  *                             to add the task to
+ * @param string       $data   The data to be saved in the task
  * @param array        $args   Additional args you want to pass to the wp_insert_post function
  *
  * @return int|WP_Error
@@ -97,7 +98,7 @@ function wpqt_create_task( $queues, $data, $args = [] ) {
 
 	$task_args = [
 		'post_type'    => 'wpqt-task',
-		'post_content' => wp_filter_post_kses( $data ),
+		'post_content' => $data,
 		'post_status'  => 'publish',
 	];
 
