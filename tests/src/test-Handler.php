@@ -44,7 +44,7 @@ class TestHandler extends WP_UnitTestCase {
 
 		$handler_obj = new Handler();
 		$handler_obj->register_rest_endpoint();
-		$endpoint = '/' . Handler::API_NAMESPACE . '/' . Handler::ENDPOINT_RUN . '/(?P<queue>[\w]+)';
+		$endpoint = '/' . Handler::API_NAMESPACE . '/' . Handler::ENDPOINT_RUN . '/(?P<queue>[\w|-]+)';
 
 		$this->assertTrue( isset( $this->server->get_routes()[ $endpoint ] ) );
 		$this->assertTrue( isset( $this->server->get_routes()[ '/' . Handler::API_NAMESPACE ] ) );
@@ -105,13 +105,14 @@ class TestHandler extends WP_UnitTestCase {
 
 	/**
 	 * Test that a request goes through successfully if it has everything it needs
+	 * @dataProvider dataProviderEndpoints
 	 */
-	public function testSuccessfullRequest() {
+	public function testSuccessfullRequest( $endpoint ) {
 
 		$handler_obj = new Handler();
 		$handler_obj->register_rest_endpoint();
 
-		$request = new WP_REST_Request( 'PUT', '/' . Handler::API_NAMESPACE . '/' . Handler::ENDPOINT_RUN . '/test' );
+		$request = new WP_REST_Request( 'PUT', '/' . Handler::API_NAMESPACE . '/' . Handler::ENDPOINT_RUN . '/' . $endpoint );
 		$request->set_body(
 			wp_json_encode( [
 				'secret' => $this->secret,
@@ -119,7 +120,7 @@ class TestHandler extends WP_UnitTestCase {
 			] )
 		);
 		$response = $this->server->dispatch( $request );
-		$this->assertEquals( 'test queue processed', $response->data );
+		$this->assertEquals( $endpoint . ' queue processed', $response->data );
 		$this->assertEquals( 200, $response->status );
 
 	}
@@ -163,6 +164,29 @@ class TestHandler extends WP_UnitTestCase {
 		$this->assertEquals( 200, $response->status );
 		$this->assertEquals( $data, get_option( $key ) );
 		$this->assertNull( get_post( $task_id ) );
+
+	}
+
+	/**
+	 * Dataprovider for names of endpoints
+	 * @return array
+	 */
+	public function dataProviderEndpoints() {
+
+		return [
+			[
+				'test',
+			],
+			[
+				'test-hypen',
+			],
+			[
+				'CrazYlEttERs',
+			],
+			[
+				'areallyreallyreallylongendpointnamebecauseheywhy-not',
+			],
+		];
 
 	}
 
