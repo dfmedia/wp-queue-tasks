@@ -10,8 +10,15 @@ namespace WPQueueTasks;
 class Scheduler {
 
 	public function setup() {
-		// Process the queue
-		add_action( 'shutdown', [ $this, 'process_queue' ], 999 );
+
+		/**
+		 * Make sure we aren't currently in a cron job or a rest request, so we don't create an infinite loop.
+		 */
+		if ( ! defined( 'DOING_CRON' ) && ! defined( 'REST_REQUEST' ) ) {
+			// Process the queue
+			add_action( 'shutdown', [ $this, 'process_queue' ], 999 );
+		}
+
 	}
 
 	/**
