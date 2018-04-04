@@ -234,20 +234,19 @@ class Processor {
 		if ( ! empty( $tasks ) && is_array( $tasks ) ) {
 			foreach ( $tasks as $task ) {
 
-				// Get the queues attached to the task
-				$queues_attached = get_the_terms( $task, 'task-queue' );
-
-				// If the task was successful, and only in the one queue, remove it.
-				if ( in_array( $task, $successful_tasks, true ) && ( ! empty( $queues_attached ) && 1 === count( $queues_attached ) ) ) {
-					wp_delete_post( $task, true );
-				} else {
-					// Remove the task from the current queue
-					wp_remove_object_terms( $task, $this->queue_id, 'task-queue' );
-				}
+				wp_remove_object_terms( $task, $this->queue_id, 'task-queue' );
 
 				if ( in_array( $task, $tasks_out_of_retries, true ) ) {
 					// If the task failed too many times, put it in the "failed" queue for safe keeping.
 					wp_set_object_terms( $task, $this->queue_name . '_' . $this->failed_queue, 'task-queue', true );
+				}
+
+				// Get the queues attached to the task
+				$queues_attached = get_the_terms( $task, 'task-queue' );
+
+				// If no queues are left on the task, delete it.
+				if ( false === $queues_attached ) {
+					wp_delete_post( $task, true );
 				}
 
 			}
