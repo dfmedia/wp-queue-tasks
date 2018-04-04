@@ -21,6 +21,7 @@ class ComposerStaticInit44247df0bc4adc251c446ae1642f8928
     );
 
     public static $classMap = array (
+        'WPQueueTasks\\CLI' => __DIR__ . '/../..' . '/src/CLI.php',
         'WPQueueTasks\\Handler' => __DIR__ . '/../..' . '/src/Handler.php',
         'WPQueueTasks\\Processor' => __DIR__ . '/../..' . '/src/Processor.php',
         'WPQueueTasks\\Register' => __DIR__ . '/../..' . '/src/Register.php',
