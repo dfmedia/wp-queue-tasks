@@ -156,6 +156,14 @@ class Processor {
 				}
 
 			endwhile;
+		else :
+
+			/**
+			 * If no posts were found then it's reasonable to expect that the term count for the
+			 * queue is out of sync with the tasks within the queue.
+			 */
+			wp_update_term_count( $term_id, 'task-queue' );
+
 		endif;
 		wp_reset_postdata();
 
