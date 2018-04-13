@@ -34,12 +34,12 @@ class Utils {
 	 * @access public
 	 * @return bool
 	 */
-	public static function lock_queue_process( $queue_name ) {
+	public static function lock_queue_process( $queue_name, $lock ) {
 
 		if ( false === self::is_queue_process_locked( $queue_name ) ) {
 			// Set the expiration to 5 minutes, just in case something goes wrong processing the queue,
 			// it doesn't just stay locked forever.
-			set_transient( 'wpqt_queue_lock_' . $queue_name, 'locked', 5 * MINUTE_IN_SECONDS );
+			set_transient( 'wpqt_queue_lock_' . $queue_name, $lock, 5 * MINUTE_IN_SECONDS );
 			return true;
 		} else {
 			return false;
@@ -71,6 +71,27 @@ class Utils {
 	 */
 	public static function is_queue_process_locked( $queue_name ) {
 		return get_transient( 'wpqt_queue_lock_' . $queue_name );
+	}
+
+	/**
+	 * Whether or not the current process owns the lock
+	 *
+	 * @param string $queue_name Name of the queue to get the lock for
+	 * @param string $lock       The lock value to check against
+	 *
+	 * @return bool
+	 * @access public
+	 */
+	public static function owns_lock( $queue_name, $lock ) {
+
+		$lock_value = self::is_queue_process_locked( $queue_name );
+
+		if ( $lock_value !== $lock && false !== $lock_value ) {
+			return false;
+		} else {
+			return true;
+		}
+
 	}
 
 }

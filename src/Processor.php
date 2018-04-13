@@ -35,7 +35,7 @@ class Processor {
 	 * Sets up all of the actions we need for the class
 	 */
 	public function setup() {
-		add_action( 'wp_queue_tasks_run_processor', [ $this, 'run_processor' ], 10, 2 );
+		add_action( 'wp_queue_tasks_run_processor', [ $this, 'run_processor' ], 10, 3 );
 	}
 
 	/**
@@ -44,14 +44,20 @@ class Processor {
 	 *
 	 * @param string $queue_name The name of the queue being processed
 	 * @param int    $term_id    The term ID of the queue
+	 * @param string $lock       The lock to check against for the process
 	 *
 	 * @access public
 	 * @return bool
 	 */
-	public function run_processor( $queue_name, $term_id ) {
+	public function run_processor( $queue_name, $term_id, $lock ) {
 
 		// If the queue name, or term ID wasn't set, bail.
 		if ( empty( $queue_name ) || 0 === absint( $term_id ) ) {
+			return false;
+		}
+
+		// Check to make sure the current process owns the lock
+		if ( false === Utils::owns_lock( $queue_name, $lock ) ) {
 			return false;
 		}
 

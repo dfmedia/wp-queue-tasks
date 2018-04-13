@@ -32,6 +32,7 @@ class Scheduler {
 	public function process_queue() {
 
 		$queues = get_terms( [ 'taxonomy' => 'task-queue' ] );
+		$lock = uniqid();
 		global $wpqt_queues;
 
 		if ( ! empty( $queues ) && is_array( $queues ) ) {
@@ -44,7 +45,7 @@ class Scheduler {
 
 				// Lock the queue process so another process can't pick it up.
 				// The queue will be unlocked in Processor::process_queue
-				if ( false === Utils::lock_queue_process( $queue->name ) ) {
+				if ( false === Utils::lock_queue_process( $queue->name, $lock ) ) {
 					continue;
 				}
 
@@ -56,9 +57,9 @@ class Scheduler {
 
 				if ( ! empty( $wpqt_queues[ $queue->name ] ) && 'async' === $wpqt_queues[ $queue->name ]->processor ) {
 					// Post to the async task handler to process this specific queue
-					$this->post_to_processor( $queue->name, $queue->term_id );
+					$this->post_to_processor( $queue->name, $queue->term_id , $lock);
 				} else {
-					$this->schedule_cron( $queue->name, $queue->term_id );
+					$this->schedule_cron( $queue->name, $queue->term_id, $lock );
 				}
 
 			}
@@ -105,11 +106,12 @@ class Scheduler {
 	 *
 	 * @param string $queue_name Name of the queue to process
 	 * @param int    $queue_id   Term ID of the queue to process
+	 * @param string $lock       The lock to check against in the handler
 	 *
 	 * @access private
 	 * @return \WP_Error|true
 	 */
-	private function post_to_processor( $queue_name, $queue_id ) {
+	private function post_to_processor( $queue_name, $queue_id, $lock ) {
 
 		if ( ! defined( 'WP_QUEUE_TASKS_PROCESSOR_SECRET' ) ) {
 			return new \WP_Error( 'no-secret', __( 'You need to define the WP_QUEUE_TASKS_PROCESSOR_SECRET constant in order to use this feature', 'wp-queue-tasks' ) );
@@ -122,6 +124,7 @@ class Scheduler {
 			'body'     => wp_json_encode( [
 				'term_id' => $queue_id,
 				'secret'  => WP_QUEUE_TASKS_PROCESSOR_SECRET,
+				'lock'    => $lock,
 			] ),
 		];
 
@@ -141,10 +144,11 @@ class Scheduler {
 	 * @access private
 	 * @return void
 	 */
-	private function schedule_cron( $queue_name, $queue_id ) {
+	private function schedule_cron( $queue_name, $queue_id, $lock ) {
 		wp_schedule_single_event( time(), 'wp_queue_tasks_run_processor', [
 			'queue_name' => $queue_name,
 			'term_id'    => $queue_id,
+			'lock'       => $lock,
 		] );
 	}
 

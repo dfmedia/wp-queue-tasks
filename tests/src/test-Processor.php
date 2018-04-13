@@ -24,7 +24,7 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testHaultProcessorNoTermId() {
 
 		$processor_obj = new Processor();
-		$actual = $processor_obj->run_processor( 'test', 0 );
+		$actual = $processor_obj->run_processor( 'test', 0, uniqid() );
 		$this->assertFalse( $actual );
 
 	}
@@ -35,8 +35,20 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testHaultProcessorNoQueueName() {
 
 		$processor_obj = new Processor();
-		$actual = $processor_obj->run_processor( 'sometest', 2 );
+		$actual = $processor_obj->run_processor( 'sometest', 2, uniqid() );
 		$this->assertFalse( $actual );
+
+	}
+
+	/**
+	 * Test that we hault the process if it's owned by another thread
+	 */
+	public function testHaultProcessOwnedByAnotherThread() {
+
+		$queue_name = 'testHaultProcessOwnedByAnotherThread';
+		$processor_obj = new Processor();
+		Utils::lock_queue_process( $queue_name, uniqid() );
+		$this->assertFalse( $processor_obj->run_processor( $queue_name, 2, uniqid() ) );
 
 	}
 
@@ -46,6 +58,7 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testSuccessfulTaskProcessing() {
 
 		$queue = 'testSuccessfulTaskProcessing';
+		$lock = uniqid();
 		wpqt_register_queue( $queue,
 			[
 				'callback' => function( $data ) use( $queue ) {
@@ -59,9 +72,9 @@ class TestProcessor extends WP_UnitTestCase {
 		$post_id = wpqt_create_task( $queue, $expected );
 		$term_obj = get_term_by( 'name', $queue, $this->taxonomy );
 
-		Utils::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue, $lock );
 		$processor_obj = new Processor();
-		$result = $processor_obj->run_processor( $queue, $term_obj->term_id );
+		$result = $processor_obj->run_processor( $queue, $term_obj->term_id, $lock );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( $expected, get_option( '_test_' . $queue ) );
@@ -79,10 +92,14 @@ class TestProcessor extends WP_UnitTestCase {
 
 		$queue_1 = 'testSuccessfulTaskProcessingMultipleQueues';
 		$queue_2 = 'testSuccessfulTaskProcessingMultipleQueues2';
+		$queue_1_lock = uniqid();
+		$queue_2_lock = uniqid();
+
 		wpqt_register_queue( $queue_1, [
 			'callback' => [ $this, 'queue_processor_callback' ],
 			'bulk' => false,
 		] );
+
 		wpqt_register_queue( $queue_2, [
 			'callback' => [ $this, 'queue_processor_callback' ],
 			'bulk' => false,
@@ -91,19 +108,19 @@ class TestProcessor extends WP_UnitTestCase {
 		$expected_value = 'my data';
 		$task_id = wpqt_create_task( [ $queue_1, $queue_2 ], $expected_value );
 
-		Utils::lock_queue_process( $queue_1 );
+		Utils::lock_queue_process( $queue_1, $queue_1_lock );
 		$processor_obj = new Processor();
 		$queue_1_id = get_term_by( 'name', $queue_1, $this->taxonomy );
-		$result = $processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
+		$result = $processor_obj->run_processor( $queue_1, $queue_1_id->term_id, $queue_1_lock );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( [ $expected_value ], get_option( '_test_queue_processor_callback' ) );
 		$this->assertNotNull( get_post( $task_id ) );
 		$this->assertFalse( Utils::is_queue_process_locked( $queue_1 ) );
 
-		Utils::lock_queue_process( $queue_2 );
+		Utils::lock_queue_process( $queue_2, $queue_2_lock );
 		$queue_2_id = get_term_by( 'name', $queue_2, $this->taxonomy );
-		$result = $processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
+		$result = $processor_obj->run_processor( $queue_2, $queue_2_id->term_id, $queue_2_lock );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( [ $expected_value, $expected_value ], get_option( '_test_queue_processor_callback' ) );
@@ -119,14 +136,15 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testSuccessfulBatchProcessing() {
 
 		$queue = 'testSuccessfulBatchProcessing';
+		$lock = uniqid();
 		wpqt_register_queue( $queue, [ 'callback' => [ $this, 'queue_processor_callback' ] ] );
 		$task_id_1 = wpqt_create_task( $queue, 'some data' );
 		$task_id_2 = wpqt_create_task( $queue, 'some other data' );
 
-		Utils::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue, $lock );
 		$processor_obj = new Processor();
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, $lock );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( [
@@ -148,6 +166,7 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testPartialFailureBatchProcessing() {
 
 		$queue = 'testPartialFailureBatchProcessing';
+		$lock = uniqid();
 		wpqt_register_queue( $queue, [ 'callback' => [ $this, 'queue_processor_callback_failure' ] ] );
 		$task_1_id = wpqt_create_task( $queue, 'test data' );
 		$task_2_id = wpqt_create_task( $queue, 'some other data' );
@@ -162,10 +181,10 @@ class TestProcessor extends WP_UnitTestCase {
 			];
 		}, 10, 4 );
 
-		Utils::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue, $lock );
 		$processor_obj = new Processor();
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, $lock );
 		global $_test_wpqt_bulk_processing_failed;
 		$actual = $_test_wpqt_bulk_processing_failed;
 		$expected = [
@@ -192,6 +211,7 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testSingleTaskFailure() {
 
 		$queue = 'testSingleTaskFailure';
+		$lock = uniqid();
 		wpqt_register_queue( $queue, [
 			'callback' => [ $this, 'queue_processor_callback_failure' ],
 			'bulk' => false,
@@ -211,10 +231,10 @@ class TestProcessor extends WP_UnitTestCase {
 			];
 		}, 10, 5 );
 
-		Utils::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue, $lock );
 		$processor_obj = new Processor();
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, $lock );
 		global $_test_wpqt_single_task_failed;
 		$actual = $_test_wpqt_single_task_failed;
 		$expected = [
@@ -240,6 +260,7 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testSingleTaskFailureMultipleInQueue() {
 
 		$queue = 'testSingleTaskFailureMultipleInQueue';
+		$lock = uniqid();
 		wpqt_register_queue( $queue, [
 			'bulk' => false,
 			'callback' => function( $data ) use ( $queue ) {
@@ -258,8 +279,9 @@ class TestProcessor extends WP_UnitTestCase {
 
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
+		Utils::lock_queue_process( $queue, $lock );
 		$processor_obj = new Processor();
-		$processor_obj->run_processor( $queue, $queue_id->term_id );
+		$processor_obj->run_processor( $queue, $queue_id->term_id, $lock );
 
 		$this->assertNull( get_post( $task_2 ) );
 		$this->assertNotNull( get_post( $task_1 ) );
@@ -273,6 +295,7 @@ class TestProcessor extends WP_UnitTestCase {
 	public function testProcessorReRunsTooManyTasks() {
 
 		$queue = 'testProcessorReRuns';
+		$lock = uniqid();
 		wpqt_register_queue( 'testProcessorReRuns', [
 			'callback' => function( $data ) {
 				return array_keys( $data );
@@ -290,7 +313,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, $lock );
 
 		$this->assertTrue( $result );
 		$this->assertEmpty( get_term_meta( $queue_id->term_id, 'wpqt_queue_last_run' ) );
@@ -327,7 +350,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		$this->assertTrue( $result );
 		$this->assertEmpty( get_term_meta( $queue_id->term_id, 'wpqt_queue_last_run' ) );
@@ -356,7 +379,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		$this->assertTrue( $result );
 
@@ -379,7 +402,7 @@ class TestProcessor extends WP_UnitTestCase {
 
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 		$processor_obj = new Processor();
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		$this->assertTrue( $result );
 
@@ -406,7 +429,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$result = $processor_obj->run_processor( $queue, $queue_id->term_id );
+		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		$this->assertTrue( $result );
 		$this->assertNull( get_post( $task_1 ) );
@@ -443,18 +466,18 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_2_id = get_term_by( 'name', $queue_2, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
-		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
+		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id, uniqid() );
+		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id, uniqid() );
 		$this->assertEquals( [ $queue_1 => 1, $queue_2 => 1 ], get_post_meta( $task_id, 'wpqt_retry', true ) );
 
 		// Second Run
-		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
-		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
+		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id, uniqid() );
+		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id, uniqid() );
 		$this->assertEquals( [ $queue_1 => 2, $queue_2 => 2 ], get_post_meta( $task_id, 'wpqt_retry', true ) );
 
 		// Third Run
-		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
-		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
+		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id, uniqid() );
+		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id, uniqid() );
 		$this->assertEquals( [ $queue_2 => 3 ], get_post_meta( $task_id, 'wpqt_retry', true ) );
 
 		$task_queues = get_the_terms( $task_id, $this->taxonomy );
@@ -462,7 +485,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$this->assertEquals( [ $failed_term_obj_1, $queue_2_id ], $task_queues );
 
 		// Fourth run for second queue
-		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
+		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id, uniqid() );
 		$this->assertEquals( [], get_post_meta( $task_id, 'wpqt_retry', true ) );
 
 		$task_queues = get_the_terms( $task_id, $this->taxonomy );
@@ -499,8 +522,8 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_2_id = get_term_by( 'name', $queue_2, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id );
-		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id );
+		$processor_obj->run_processor( $queue_1, $queue_1_id->term_id, uniqid() );
+		$processor_obj->run_processor( $queue_2, $queue_2_id->term_id, uniqid() );
 
 		$task_queues = get_the_terms( $task_id, $this->taxonomy );
 		$this->assertEquals( $task_queues, [ $queue_2_id ] );
@@ -538,7 +561,7 @@ class TestProcessor extends WP_UnitTestCase {
 		}, 10, 3 );
 
 		$processor_obj = new Processor();
-		$processor_obj->run_processor( $queue, $queue_id->term_id );
+		$processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		global $_test_wpqt_single_task_error;
 		$expected = [
@@ -583,7 +606,7 @@ class TestProcessor extends WP_UnitTestCase {
 		$queue_id = get_term_by( 'name', $queue, $this->taxonomy );
 
 		$processor_obj = new Processor();
-		$processor_obj->run_processor( $queue, $queue_id->term_id );
+		$processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		global $_test_wpqt_bulk_processing_error;
 		$expected = [
