@@ -56,7 +56,7 @@ class TestScheduler extends WP_UnitTestCase {
 		wpqt_register_queue( $queue, [ 'callback' => '__return_true', 'processor' => 'cron' ] );
 		$result = wpqt_create_task( $queue, 'test' );
 		$this->assertTrue( is_int( $result ) );
-		Utils::lock_queue_process( $queue );
+		Utils::lock_queue_process( $queue, uniqid() );
 		$register = new Scheduler();
 		$register->process_queue();
 		$this->assertFalse( wp_next_scheduled( 'wpqt_run_processor' ) );
@@ -99,9 +99,10 @@ class TestScheduler extends WP_UnitTestCase {
 
 		$term_obj = get_term_by( 'name', $queue, 'task-queue' );
 
-		$actual = wp_next_scheduled( 'wp_queue_tasks_run_processor', [ 'queue_name' => $queue, 'term_id' => $term_obj->term_id ] );
+		$lock = Utils::is_queue_process_locked( $queue );
+		$actual = wp_next_scheduled( 'wp_queue_tasks_run_processor', [ 'queue_name' => $queue, 'term_id' => $term_obj->term_id, 'lock' => $lock ] );
 		$this->assertNotFalse( $actual );
-		$this->assertEquals( 'locked', Utils::is_queue_process_locked( $queue ) );
+		$this->assertNotFalse( Utils::is_queue_process_locked( $queue ) );
 
 	}
 

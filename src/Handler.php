@@ -60,6 +60,7 @@ class Handler {
 		$queue_name = ( isset( $request['queue'] ) ) ? $request['queue'] : '';
 		$body = json_decode( $request->get_body(), true );
 		$term_id = ( ! empty( $body['term_id'] ) ) ? absint( $body['term_id'] ) : 0;
+		$lock = ( ! empty( $body['lock'] ) ) ? sanitize_text_field( $body['lock'] ) : '';
 
 		if ( empty( $queue_name ) || empty( $term_id ) ) {
 			return rest_ensure_response(
@@ -67,7 +68,7 @@ class Handler {
 			);
 		}
 
-		do_action( 'wp_queue_tasks_run_processor', $queue_name, $term_id );
+		do_action( 'wp_queue_tasks_run_processor', $queue_name, $term_id, $lock );
 
 		return rest_ensure_response( sprintf( __( '%s queue processed', 'wp-queue-tasks' ), $queue_name ) );
 

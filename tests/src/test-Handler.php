@@ -111,12 +111,14 @@ class TestHandler extends WP_UnitTestCase {
 
 		$handler_obj = new Handler();
 		$handler_obj->register_rest_endpoint();
+		$lock = uniqid();
 
 		$request = new WP_REST_Request( 'PUT', '/' . Handler::API_NAMESPACE . '/' . Handler::ENDPOINT_RUN . '/' . $endpoint );
 		$request->set_body(
 			wp_json_encode( [
 				'secret' => $this->secret,
 				'term_id' => 123,
+				'lock' => $lock,
 			] )
 		);
 		$response = $this->server->dispatch( $request );
@@ -139,6 +141,7 @@ class TestHandler extends WP_UnitTestCase {
 		$queue = 'testSuccessfulQueueProcess';
 		$key = '_test_' . $queue;
 		$data = 'some data here';
+		$lock = uniqid();
 
 		wpqt_register_queue( $queue, [
 			'callback' => function( $data ) use ( $key ) {
@@ -156,6 +159,7 @@ class TestHandler extends WP_UnitTestCase {
 			wp_json_encode( [
 				'secret' => $this->secret,
 				'term_id' => $queue_id->term_id,
+				'lock' => $lock,
 			] )
 		);
 
