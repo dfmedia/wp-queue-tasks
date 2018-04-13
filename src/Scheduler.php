@@ -42,19 +42,17 @@ class Scheduler {
 					continue;
 				}
 
-				// If the queue is already being processed, bail.
-				if ( false !== Utils::is_queue_process_locked( $queue->name ) ) {
+				// Lock the queue process so another process can't pick it up.
+				// The queue will be unlocked in Processor::process_queue
+				if ( false === Utils::lock_queue_process( $queue->name ) ) {
 					continue;
 				}
 
 				// If the queue doesn't have enough items, or is set to process at a certain interval, bail.
 				if ( false === $this->should_process( $queue->name, $queue->term_id, $queue->count ) ) {
+					Utils::unlock_queue_process( $queue->name );
 					continue;
 				}
-
-				// Lock the queue process so another process can't pick it up.
-				// The queue will be unlocked in Processor::process_queue
-				Utils::lock_queue_process( $queue->name );
 
 				if ( ! empty( $wpqt_queues[ $queue->name ] ) && 'async' === $wpqt_queues[ $queue->name ]->processor ) {
 					// Post to the async task handler to process this specific queue

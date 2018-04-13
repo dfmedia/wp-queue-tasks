@@ -32,12 +32,19 @@ class Utils {
 	 *
 	 * @param string $queue_name Name of the queue to set a lock for
 	 * @access public
-	 * @return void
+	 * @return bool
 	 */
 	public static function lock_queue_process( $queue_name ) {
-		// Set the expiration to 5 minutes, just in case something goes wrong processing the queue,
-		// it doesn't just stay locked forever.
-		set_transient( 'wpqt_queue_lock_' . $queue_name, 'locked', 5 * MINUTE_IN_SECONDS );
+
+		if ( false === self::is_queue_process_locked( $queue_name ) ) {
+			// Set the expiration to 5 minutes, just in case something goes wrong processing the queue,
+			// it doesn't just stay locked forever.
+			set_transient( 'wpqt_queue_lock_' . $queue_name, 'locked', 5 * MINUTE_IN_SECONDS );
+			return true;
+		} else {
+			return false;
+		}
+
 	}
 
 	/**
