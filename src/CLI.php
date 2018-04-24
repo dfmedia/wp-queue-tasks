@@ -145,8 +145,11 @@ class CLI {
 		}
 
 		\WP_CLI::log( __( 'Starting Processor', 'wp-queue-tasks' ) );
+		$lock = uniqid();
+		Utils::lock_queue_process( $queue_name, $lock );
 		$processor_obj = new Processor();
-		$processor_obj->run_processor( $queue_name, $queue_term->term_id );
+		$processor_obj->run_processor( $queue_name, $queue_term->term_id, $lock );
+		Utils::unlock_queue_process( $queue_name );
 		\WP_CLI::log( __( 'Processor ran', 'wp-queue-tasks' ) );
 
 	}
