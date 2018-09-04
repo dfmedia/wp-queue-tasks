@@ -17,6 +17,10 @@ class Register {
 		// Registers the "task" post type
 		add_action( 'init', [ $this, 'register_post_type' ] );
 
+		// Disable syncing in Jetpack
+		add_filter( 'option_jetpack_sync_settings_post_types_blacklist', [ $this, 'blacklist_post_type' ] );
+		add_filter( 'default_option_jetpack_sync_settings_post_types_blacklist', [ $this, 'blacklist_post_type' ] );
+
 	}
 
 	/**
@@ -114,6 +118,24 @@ class Register {
 
 		register_post_type( 'wpqt-task', $args );
 
+	}
+
+	/**
+	 * Blacklists the wpqt-task post type from being synced in Jetpack
+	 *
+	 * @param array|false $post_types Either the false default or an existing array of blacklisted
+	 *                                post types
+	 *
+	 * @return array
+	 * @access public
+	 */
+	public function blacklist_post_type( $post_types ) {
+		if ( is_array( $post_types ) ) {
+			$post_types[] = 'wpqt-task';
+		} else {
+			$post_types = [ 'wpqt-task' ];
+		}
+		return $post_types;
 	}
 
 }
