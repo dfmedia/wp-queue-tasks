@@ -156,7 +156,7 @@ class Register {
 			return $value;
 		}
 
-		if ( 'wpqt-task' === get_post_status( absint( $args['post_id'] ) ) ) {
+		if ( 'wpqt-task' === get_post_type( absint( $args['post_id'] ) ) ) {
 			$value = false;
 		}
 
