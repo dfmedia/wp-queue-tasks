@@ -21,6 +21,9 @@ class Register {
 		add_filter( 'option_jetpack_sync_settings_post_types_blacklist', [ $this, 'blacklist_post_type' ] );
 		add_filter( 'default_option_jetpack_sync_settings_post_types_blacklist', [ $this, 'blacklist_post_type' ] );
 
+		// Performance improvement for VIP
+		add_filter( 'wpcom_async_transition_post_status_schedule_async', [ $this, 'disable_post_transition' ], 10, 2 );
+
 	}
 
 	/**
@@ -130,12 +133,36 @@ class Register {
 	 * @access public
 	 */
 	public function blacklist_post_type( $post_types ) {
-		if ( is_array( $post_types ) ) {
-			$post_types[] = 'wpqt-task';
-		} else {
-			$post_types = [ 'wpqt-task' ];
+		if ( ! is_array( $post_types ) ) {
+			$post_types = [];
 		}
+
+		$post_types[] = 'wpqt-task';
+
 		return $post_types;
+	}
+
+	/**
+	 * Disables the post transition cron event for the wpqt-task post type on WordPress VIP
+	 *
+	 * @param bool  $value Whether or not to run the event
+	 * @param array $args  The arguments normally going to the cron event
+	 *
+	 * @return bool
+	 * @access public
+	 */
+	public function disable_post_transition( $value, $args ) {
+
+		if ( empty( $args['post_id'] ) ) {
+			return $value;
+		}
+
+		if ( 'wpqt-task' === get_post_type( absint( $args['post_id'] ) ) ) {
+			$value = false;
+		}
+
+		return $value;
+
 	}
 
 }
