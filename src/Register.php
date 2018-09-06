@@ -133,11 +133,12 @@ class Register {
 	 * @access public
 	 */
 	public function blacklist_post_type( $post_types ) {
-		if ( is_array( $post_types ) ) {
-			$post_types[] = 'wpqt-task';
-		} else {
-			$post_types = [ 'wpqt-task' ];
+		if ( ! is_array( $post_types ) ) {
+			$post_types = [];
 		}
+
+		$post_types[] = 'wpqt-task';
+
 		return $post_types;
 	}
 
