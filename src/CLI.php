@@ -410,17 +410,17 @@ class CLI {
 	private function get_failed_tasks( $queue ) {
 
 		$args = [
-			'post_type' => self::POST_TYPE,
+			'post_type'      => self::POST_TYPE,
 			'posts_per_page' => 999,
-			'fields' => 'ids',
-			'no_found_rows' => true,
-			'order' => 'ASC',
-			'orderby' => 'date',
-			'tax_query' => [
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+			'order'          => 'ASC',
+			'orderby'        => 'date',
+			'tax_query'      => [
 				[
 					'taxonomy' => self::TAXONOMY,
-					'field' => 'slug',
-					'terms' => $queue,
+					'field'    => 'slug',
+					'terms'    => $queue,
 				],
 			],
 		];
