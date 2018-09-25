@@ -399,6 +399,14 @@ class CLI {
 
 	}
 
+	/**
+	 * Retrieve the failed tasks within a given queue
+	 *
+	 * @param string $queue Name of the queue to retrieve failed tasks for
+	 *
+	 * @return \WP_Query
+	 * @access private
+	 */
 	private function get_failed_tasks( $queue ) {
 
 		$args = [
@@ -406,6 +414,8 @@ class CLI {
 			'posts_per_page' => 999,
 			'fields' => 'ids',
 			'no_found_rows' => true,
+			'order' => 'ASC',
+			'orderby' => 'date',
 			'tax_query' => [
 				[
 					'taxonomy' => self::TAXONOMY,
@@ -415,8 +425,7 @@ class CLI {
 			],
 		];
 
-		$tasks = new \WP_Query( $args );
-		return $tasks;
+		return new \WP_Query( $args );
 
 	}
 
