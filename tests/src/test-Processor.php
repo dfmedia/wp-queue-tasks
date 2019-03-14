@@ -187,20 +187,16 @@ class TestProcessor extends WP_UnitTestCase {
 		$result = $processor_obj->run_processor( $queue, $queue_id->term_id, $lock );
 		global $_test_wpqt_bulk_processing_failed;
 		$actual = $_test_wpqt_bulk_processing_failed;
-		$expected = [
-			'failed_tasks' => 1,
-			'tasks_to_delete' => [ $task_1_id ],
-			'tasks' => [
-				$task_1_id => 'test data',
-				$task_2_id => 'some other data',
-			],
-			'queue_name' => $queue,
-		];
 
 		$this->assertTrue( $result );
-		$this->assertEquals( $expected, $actual );
-		$this->assertNull( get_post( $task_1_id ) );
-		$this->assertNotNull( get_post( $task_2_id ) );
+		$this->assertEquals( 1, $actual['failed_tasks'] );
+		$this->assertEquals( 1, count( $actual['tasks_to_delete'] ) );
+		$this->assertEquals( [
+			$task_1_id => 'test data',
+			$task_2_id => 'some other data',
+		], $actual['tasks'] );
+		$this->assertEquals( $queue, $actual['queue_name'] );
+		$this->assertNull( get_post( $actual['tasks_to_delete'][0] ) );
 		$this->assertFalse( Utils::is_queue_process_locked( $queue ) );
 
 	}
@@ -609,12 +605,9 @@ class TestProcessor extends WP_UnitTestCase {
 		$processor_obj->run_processor( $queue, $queue_id->term_id, uniqid() );
 
 		global $_test_wpqt_bulk_processing_error;
-		$expected = [
-			'task_ids' => [ $task_1, $task_2 ],
-			'queue_name' => $queue,
-		];
 
-		$this->assertEquals( $expected, $_test_wpqt_bulk_processing_error );
+		$this->assertEquals( 2, count( $_test_wpqt_bulk_processing_error['task_ids'] ) );
+		$this->assertEquals( $queue, $_test_wpqt_bulk_processing_error['queue_name'] );
 		$this->assertNotNull( get_post( $task_1 ) );
 		$this->assertNotNull( get_post( $task_2 ) );
 

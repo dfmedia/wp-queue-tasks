@@ -6,6 +6,8 @@ namespace WPQueueTasks;
  */
 class Register {
 
+	const POST_TYPE = 'wpqt-task';
+
 	/**
 	 * Sets up all of the functionality to run in the proper hook
 	 */
@@ -23,6 +25,10 @@ class Register {
 
 		// Performance improvement for VIP
 		add_filter( 'wpcom_async_transition_post_status_schedule_async', [ $this, 'disable_post_transition' ], 10, 2 );
+
+		if ( true === Utils::debug_on() ) {
+			add_action( 'admin_menu', [ $this, 'hide_admin_ui' ] );
+		}
 
 	}
 
@@ -70,7 +76,7 @@ class Register {
 			'graphql_plural_name'   => 'queues',
 		];
 
-		register_taxonomy( 'task-queue', 'wpqt-task', $args );
+		register_taxonomy( 'task-queue', self::POST_TYPE, $args );
 
 	}
 
@@ -119,7 +125,7 @@ class Register {
 			'graphql_plural_name'   => 'tasks',
 		];
 
-		register_post_type( 'wpqt-task', $args );
+		register_post_type( self::POST_TYPE, $args );
 
 	}
 
@@ -137,7 +143,7 @@ class Register {
 			$post_types = [];
 		}
 
-		$post_types[] = 'wpqt-task';
+		$post_types[] = self::POST_TYPE;
 
 		return $post_types;
 	}
@@ -157,12 +163,24 @@ class Register {
 			return $value;
 		}
 
-		if ( 'wpqt-task' === get_post_type( absint( $args['post_id'] ) ) ) {
+		if ( self::POST_TYPE === get_post_type( absint( $args['post_id'] ) ) ) {
 			$value = false;
 		}
 
 		return $value;
 
+	}
+
+	/**
+	 * Hides the admin UI when the plugin is in debug mode from non-admins
+	 *
+	 * @access public
+	 * @return void
+	 */
+	public function hide_admin_ui() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			remove_menu_page( 'edit.php?post_type=' . self::POST_TYPE );
+		}
 	}
 
 }
